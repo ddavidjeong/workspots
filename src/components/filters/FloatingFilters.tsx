@@ -7,6 +7,7 @@ import { City, SpotFilters, CITY_DEFAULTS, CATEGORY_INFO, SpotCategory } from '@
 interface FloatingFiltersProps {
   city: City;
   filters: SpotFilters;
+  spotCount?: number;
   onCityChange: (city: City) => void;
   onFiltersChange: (filters: SpotFilters) => void;
 }
@@ -14,6 +15,7 @@ interface FloatingFiltersProps {
 export default function FloatingFilters({
   city,
   filters,
+  spotCount = 0,
   onCityChange,
   onFiltersChange,
 }: FloatingFiltersProps) {
@@ -28,7 +30,7 @@ export default function FloatingFilters({
   const selectedCategory = filters.category ? CATEGORY_INFO[filters.category] : null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <motion.div layout className="flex flex-wrap items-center gap-2">
       {/* City selector - h-9 to match other buttons */}
       <div className="flex items-center h-9 bg-white/95 backdrop-blur-sm rounded-full shadow-md border border-stone-200 px-1 overflow-hidden">
         {cities.map(([key, config]) => (
@@ -188,9 +190,10 @@ export default function FloatingFilters({
       />
 
       {/* Clear filters - h-9 */}
-      <AnimatePresence>
+      <AnimatePresence mode="popLayout">
         {Object.values(filters).some((v) => v !== undefined) && (
           <motion.button
+            layout
             onClick={() => onFiltersChange({})}
             className="flex items-center gap-1.5 h-9 px-3 rounded-full text-xs font-medium shadow-sm"
             style={{ backgroundColor: '#fefae0', color: '#283618' }}
@@ -207,7 +210,16 @@ export default function FloatingFilters({
           </motion.button>
         )}
       </AnimatePresence>
-    </div>
+
+      {/* Spot count with flip animation */}
+      <motion.div
+        layout="position"
+        className="flex items-center h-9 bg-white/95 backdrop-blur-sm rounded-full shadow-md border border-stone-200 px-3 gap-1"
+        transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+      >
+        <FlipCounter value={spotCount} /><span className="text-xs font-medium text-stone-500">spots</span>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -249,5 +261,32 @@ function FilterPill({ icon, label, active, onClick }: FilterPillProps) {
         {label}
       </span>
     </motion.button>
+  );
+}
+
+function FlipCounter({ value }: { value: number }) {
+  const digits = String(value).split('');
+
+  return (
+    <span className="text-xs font-semibold tabular-nums" style={{ letterSpacing: '0.02em', color: '#283618' }}>
+      <AnimatePresence mode="popLayout">
+        {digits.map((digit, i) => (
+          <motion.span
+            key={`${digits.length}-${i}-${digit}`}
+            className="inline-block"
+            initial={{ y: -10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 10, opacity: 0 }}
+            transition={{
+              type: 'spring',
+              stiffness: 500,
+              damping: 30,
+            }}
+          >
+            {digit}
+          </motion.span>
+        ))}
+      </AnimatePresence>
+    </span>
   );
 }

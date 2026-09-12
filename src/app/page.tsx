@@ -234,6 +234,7 @@ export default function Home() {
             <FloatingFilters
               city={city}
               filters={filters}
+              spotCount={spots.length}
               onCityChange={handleCityChange}
               onFiltersChange={setFilters}
             />
@@ -285,28 +286,7 @@ export default function Home() {
             );
           })}
 
-          {/* Spot count - bottom left */}
-          <motion.div
-            className="absolute bottom-6 left-4 z-30"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, type: 'spring', stiffness: 400, damping: 25 }}
-          >
-            <motion.div
-              className="flex items-center h-9 bg-white/95 backdrop-blur-sm rounded-full shadow-md border border-stone-200 px-4"
-              whileHover={{ scale: 1.05 }}
-            >
-              <motion.span
-                className="text-xs font-medium text-stone-700"
-                key={spots.length}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                {loading ? 'Loading...' : `${spots.length} spots`}
-              </motion.span>
-            </motion.div>
-          </motion.div>
-        </>
+                  </>
       ) : (
         // Split view layout - no header, list slides in
         <>
@@ -316,10 +296,15 @@ export default function Home() {
               city={city}
               spots={spots}
               selectedSpotId={selectedSpotId}
+              splitView={true}
               onBoundsChange={handleBoundsChange}
               onSpotClick={handleSpotClick}
               onSpotHover={handleSpotHover}
               onMapReady={setMapControls}
+            />
+            {/* Viewport bounds indicator */}
+            <div
+              className="absolute top-20 left-20 bottom-16 right-[432px] border-2 border-dashed border-white/40 rounded-2xl pointer-events-none z-10 shadow-sm"
             />
           </div>
 
@@ -380,31 +365,10 @@ export default function Home() {
             <FloatingFilters
               city={city}
               filters={filters}
+              spotCount={spots.length}
               onCityChange={handleCityChange}
               onFiltersChange={setFilters}
             />
-          </motion.div>
-
-          {/* Spot count - bottom left */}
-          <motion.div
-            className="absolute bottom-6 left-4 z-30"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, type: 'spring', stiffness: 400, damping: 25 }}
-          >
-            <motion.div
-              className="flex items-center h-9 bg-white/80 backdrop-blur-md rounded-full shadow-md border border-stone-200/50 px-4"
-              whileHover={{ scale: 1.05 }}
-            >
-              <motion.span
-                className="text-xs font-medium text-stone-700"
-                key={spots.length}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                {loading ? 'Loading...' : `${spots.length} spots`}
-              </motion.span>
-            </motion.div>
           </motion.div>
 
           {/* Sliding list panel from right - glass effect */}

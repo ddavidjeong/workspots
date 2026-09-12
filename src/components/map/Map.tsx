@@ -12,6 +12,7 @@ interface MapProps {
   city: City;
   spots?: SpotWithDetails[];
   selectedSpotId?: string | null;
+  splitView?: boolean;
   onBoundsChange?: (bounds: BoundingBox) => void;
   onSpotClick?: (spotId: string, position?: { x: number; y: number }) => void;
   onSpotHover?: (spotId: string | null) => void;
@@ -23,6 +24,7 @@ function LeafletMap({
   city,
   spots = [],
   selectedSpotId,
+  splitView = false,
   onBoundsChange,
   onSpotClick,
   onSpotHover,
@@ -38,10 +40,11 @@ function LeafletMap({
     const exiting = prevSpotsRef.current.filter(s => !currentIds.has(s.id));
 
     if (exiting.length > 0) {
-      setExitingSpots(exiting);
+      setExitingSpots(prev => [...prev, ...exiting]);
       // Remove after animation
-      const timer = setTimeout(() => setExitingSpots([]), 300);
-      return () => clearTimeout(timer);
+      setTimeout(() => {
+        setExitingSpots(prev => prev.filter(s => !exiting.some(e => e.id === s.id)));
+      }, 300);
     }
 
     prevSpotsRef.current = spots;
@@ -89,7 +92,7 @@ function LeafletMap({
         attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
       />
-      <MapEvents city={city} onBoundsChange={onBoundsChange} onMapReady={onMapReady} components={components} />
+      <MapEvents city={city} splitView={splitView} onBoundsChange={onBoundsChange} onMapReady={onMapReady} components={components} />
       {spots.map((spot) => (
         <SpotMarker
           key={spot.id}
@@ -119,11 +122,13 @@ function LeafletMap({
 // Handle map events
 function MapEvents({
   city,
+  splitView,
   onBoundsChange,
   onMapReady,
   components
 }: {
   city: City;
+  splitView: boolean;
   onBoundsChange?: (bounds: BoundingBox) => void;
   onMapReady?: (controls: { zoomIn: () => void; zoomOut: () => void }) => void;
   components: any;
@@ -147,28 +152,57 @@ function MapEvents({
     map.flyTo([center[1], center[0]], zoom, { duration: 1.5 });
   }, [city, map]);
 
+  // Recalculate bounds when splitView changes
+  useEffect(() => {
+    if (onBoundsChange) {
+      // Small delay to ensure map size is updated after layout shift
+      const timer = setTimeout(() => {
+        onBoundsChange(getVisibleBounds());
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [splitView]);
+
+  // Calculate bounds with inset for visible area (matches the dotted border in split view)
+  const getVisibleBounds = () => {
+    if (!splitView) {
+      const bounds = map.getBounds();
+      return {
+        minLat: bounds.getSouth(),
+        minLng: bounds.getWest(),
+        maxLat: bounds.getNorth(),
+        maxLng: bounds.getEast(),
+      };
+    }
+
+    const size = map.getSize();
+    // Insets matching the dotted border: top-20(80px), left-20(80px), bottom-16(64px), right-[432px]
+    const insetTop = 80;
+    const insetLeft = 80;
+    const insetBottom = 64;
+    const insetRight = 432;
+
+    const topLeft = map.containerPointToLatLng([insetLeft, insetTop]);
+    const bottomRight = map.containerPointToLatLng([size.x - insetRight, size.y - insetBottom]);
+
+    return {
+      minLat: bottomRight.lat,
+      minLng: topLeft.lng,
+      maxLat: topLeft.lat,
+      maxLng: bottomRight.lng,
+    };
+  };
+
   // Track bounds changes
   useMapEvents({
     moveend: () => {
       if (onBoundsChange) {
-        const bounds = map.getBounds();
-        onBoundsChange({
-          minLat: bounds.getSouth(),
-          minLng: bounds.getWest(),
-          maxLat: bounds.getNorth(),
-          maxLng: bounds.getEast(),
-        });
+        onBoundsChange(getVisibleBounds());
       }
     },
     load: () => {
       if (onBoundsChange) {
-        const bounds = map.getBounds();
-        onBoundsChange({
-          minLat: bounds.getSouth(),
-          minLng: bounds.getWest(),
-          maxLat: bounds.getNorth(),
-          maxLng: bounds.getEast(),
-        });
+        onBoundsChange(getVisibleBounds());
       }
     },
   });
