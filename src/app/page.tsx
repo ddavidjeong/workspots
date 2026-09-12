@@ -409,14 +409,14 @@ export default function Home() {
 
           {/* Sliding list panel from right - glass effect */}
           <motion.div
-            className="absolute top-0 right-0 bottom-0 w-[400px] bg-white/40 backdrop-blur-xl shadow-2xl z-40 border-l border-white/20"
+            className="absolute top-0 right-0 bottom-0 w-[400px] bg-gradient-to-r from-white/20 to-white/35 backdrop-blur-lg shadow-2xl z-40 border-l border-white/10"
             initial={{ x: 400, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
           >
             <div className="h-full overflow-y-auto">
               <motion.div
-                className="sticky top-0 bg-white/50 backdrop-blur-md border-b border-stone-200/30 px-4 py-3 z-10"
+                className="sticky top-0 bg-white/90 backdrop-blur-md border-b border-stone-200/30 px-4 py-3 z-10"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1, type: 'spring', stiffness: 400, damping: 25 }}

@@ -72,16 +72,17 @@ export default function SpotGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 p-4 px-5 overflow-y-auto">
+    <div className="flex flex-col gap-4 p-4 pb-8">
       {spots.map((spot) => (
-        <SpotCard
-          key={spot.id}
-          spot={spot}
-          isSelected={spot.id === selectedSpotId}
-          isHovered={spot.id === hoveredSpotId}
-          onClick={() => onSpotClick?.(spot.id)}
-          onHover={(hovering) => onSpotHover?.(hovering ? spot.id : null)}
-        />
+        <div key={spot.id} className="relative" style={{ margin: '4px' }}>
+          <SpotCard
+            spot={spot}
+            isSelected={spot.id === selectedSpotId}
+            isHovered={spot.id === hoveredSpotId}
+            onClick={() => onSpotClick?.(spot.id)}
+            onHover={(hovering) => onSpotHover?.(hovering ? spot.id : null)}
+          />
+        </div>
       ))}
     </div>
   );

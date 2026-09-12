@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { City, CITY_DEFAULTS, BoundingBox, SpotWithDetails, CATEGORY_INFO } from '@/types';
 
 export interface SpotHoverEvent {
@@ -29,6 +29,23 @@ function LeafletMap({
   onMapReady,
 }: MapProps) {
   const [components, setComponents] = useState<any>(null);
+  const [exitingSpots, setExitingSpots] = useState<SpotWithDetails[]>([]);
+  const prevSpotsRef = useRef<SpotWithDetails[]>([]);
+
+  // Track exiting spots for animation
+  useEffect(() => {
+    const currentIds = new Set(spots.map(s => s.id));
+    const exiting = prevSpotsRef.current.filter(s => !currentIds.has(s.id));
+
+    if (exiting.length > 0) {
+      setExitingSpots(exiting);
+      // Remove after animation
+      const timer = setTimeout(() => setExitingSpots([]), 300);
+      return () => clearTimeout(timer);
+    }
+
+    prevSpotsRef.current = spots;
+  }, [spots]);
 
   useEffect(() => {
     // Dynamic import of react-leaflet and leaflet CSS
@@ -78,8 +95,20 @@ function LeafletMap({
           key={spot.id}
           spot={spot}
           isSelected={spot.id === selectedSpotId}
+          isExiting={false}
           onClick={(position) => onSpotClick?.(spot.id, position)}
           onHover={(hovering) => onSpotHover?.(hovering ? spot.id : null)}
+          components={components}
+        />
+      ))}
+      {exitingSpots.map((spot) => (
+        <SpotMarker
+          key={`exit-${spot.id}`}
+          spot={spot}
+          isSelected={false}
+          isExiting={true}
+          onClick={() => {}}
+          onHover={() => {}}
           components={components}
         />
       ))}
@@ -151,12 +180,14 @@ function MapEvents({
 function SpotMarker({
   spot,
   isSelected,
+  isExiting,
   onClick,
   onHover,
   components,
 }: {
   spot: SpotWithDetails;
   isSelected: boolean;
+  isExiting: boolean;
   onClick: (position: { x: number; y: number }) => void;
   onHover: (hovering: boolean) => void;
   components: any;
@@ -171,7 +202,7 @@ function SpotMarker({
 
   // Memoize icon to only recreate when selection changes
   const icon = useMemo(() => L.divIcon({
-    className: 'custom-marker',
+    className: isExiting ? 'custom-marker marker-exit' : 'custom-marker',
     html: `
       <div style="
         width: 32px;
@@ -192,7 +223,7 @@ function SpotMarker({
     `,
     iconSize: [32, 32],
     iconAnchor: [16, 16],
-  }), [L, spot.id, spot.average_rating, markerColor, isSelected, selectedRingColor]);
+  }), [L, spot.id, spot.average_rating, markerColor, isSelected, selectedRingColor, isExiting]);
 
   return (
     <Marker

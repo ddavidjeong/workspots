@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { SpotWithDetails, CATEGORY_INFO } from '@/types';
@@ -14,7 +14,7 @@ interface SpotCardProps {
   onHover?: (hovering: boolean) => void;
 }
 
-export default function SpotCard({
+const SpotCard = memo(function SpotCard({
   spot,
   isSelected = false,
   isHovered = false,
@@ -103,12 +103,10 @@ export default function SpotCard({
   return (
     <div
       className={`
-        group relative rounded-xl bg-white/70 backdrop-blur-md transition-shadow duration-200 select-none
+        group relative rounded-xl bg-white transition-shadow duration-200 select-none
         ${isSelected
-          ? 'ring-2 ring-[#bc6c25] ring-offset-2'
-          : isHovered
-          ? 'ring-2 ring-stone-300 shadow-lg'
-          : 'ring-1 ring-stone-200/50 hover:shadow-md'}
+          ? 'ring-2 ring-[#bc6c25] ring-offset-2 shadow-lg'
+          : 'ring-1 ring-stone-200/50 hover:shadow-lg'}
       `}
       onMouseEnter={() => onHover?.(true)}
       onMouseLeave={() => onHover?.(false)}
@@ -186,7 +184,7 @@ export default function SpotCard({
         {categoryInfo && (
           <div
             className="absolute top-2 left-2 w-8 h-8 rounded-full flex items-center justify-center text-base backdrop-blur-md shadow-sm"
-            style={{ backgroundColor: `${categoryInfo.bg}dd` }}
+            style={{ backgroundColor: `${categoryInfo.bg}40` }}
             title={categoryInfo.label}
           >
             {categoryInfo.icon}
@@ -208,7 +206,7 @@ export default function SpotCard({
       </div>
 
       {/* Info section */}
-      <div className="p-4 pb-5">
+      <div className="p-5 pb-8">
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="min-w-0 flex-1">
             <h3 className="font-semibold text-stone-900 text-base leading-tight">
@@ -280,62 +278,57 @@ export default function SpotCard({
               </div>
             )}
 
-            {/* Actions row */}
-            <div className="flex gap-2 pt-2">
-              <motion.button
-                onClick={(e) => { e.stopPropagation(); openDirections(); }}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 text-white rounded-lg text-sm font-medium shadow-sm"
-                style={{ backgroundColor: '#283618' }}
-                whileHover={{ backgroundColor: '#3d4f28', boxShadow: '0 4px 12px rgba(40, 54, 24, 0.3)' }}
-                whileTap={{ backgroundColor: '#1d2912' }}
-                transition={{ duration: 0.15 }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                </svg>
-                Get Directions
-              </motion.button>
-              <motion.button
-                onClick={(e) => e.stopPropagation()}
-                className="px-3 py-2 rounded-lg text-sm font-medium"
-                style={{ backgroundColor: '#f5f3ef', color: '#283618' }}
-                whileHover={{ backgroundColor: '#e8e5de' }}
-                whileTap={{ backgroundColor: '#ddd9d0' }}
-                transition={{ duration: 0.15 }}
-              >
-                Verify Info
-              </motion.button>
             </div>
-          </div>
         </div>
 
+        {/* Actions row - outside overflow-hidden so scale works */}
+        {expanded && (
+          <div className="flex gap-2 pt-3">
+            <button
+              onClick={(e) => { e.stopPropagation(); openDirections(); }}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 text-white rounded-lg text-sm font-medium transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]"
+              style={{ backgroundColor: '#283618' }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              </svg>
+              Get Directions
+            </button>
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]"
+              style={{ backgroundColor: '#e8ebd8', color: '#283618' }}
+            >
+              Verify Info
+            </button>
+          </div>
+        )}
+
         {/* Expand/collapse button */}
-        <motion.button
+        <button
           onClick={(e) => {
             e.stopPropagation();
             setExpanded(!expanded);
             if (!expanded) setCurrentPhoto(0);
             onClick?.();
           }}
-          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium mt-3"
+          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium mt-3 transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]"
           style={{ backgroundColor: '#f5f3ef', color: '#283618' }}
-          whileHover={{ backgroundColor: '#e8e5de' }}
-          whileTap={{ backgroundColor: '#ddd9d0' }}
-          transition={{ duration: 0.15 }}
         >
-          <motion.svg
-            className="w-4 h-4"
-            animate={{ rotate: expanded ? 180 : 0 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+          <svg
+            className="w-4 h-4 transition-transform duration-200"
+            style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </motion.svg>
+          </svg>
           {expanded ? 'Show less' : 'View details'}
-        </motion.button>
+        </button>
       </div>
     </div>
   );
-}
+});
+
+export default SpotCard;

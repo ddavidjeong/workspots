@@ -298,7 +298,7 @@ export default function SpotPreview({
       </div>
 
       {/* Info */}
-      <div className="p-4">
+      <div className="p-4 pb-5 overflow-visible">
         <div className="flex items-start justify-between gap-2 mb-3">
           <div className="min-w-0">
             <h3 className="font-semibold text-lg text-stone-900">{spot.name}</h3>
@@ -370,34 +370,37 @@ export default function SpotPreview({
               </div>
             )}
 
-            {/* Actions row */}
-            <div className="flex gap-2 pt-2">
-              <motion.button
-                onClick={openDirections}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 text-white rounded-lg text-sm font-medium shadow-sm"
-                style={{ backgroundColor: '#283618' }}
-                whileHover={{ backgroundColor: '#3d4f28', boxShadow: '0 4px 12px rgba(40, 54, 24, 0.3)' }}
-                whileTap={{ backgroundColor: '#1d2912' }}
-                transition={{ duration: 0.15 }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                </svg>
-                Get Directions
-              </motion.button>
-              <motion.button
-                onClick={(e) => e.stopPropagation()}
-                className="px-3 py-2 rounded-lg text-sm font-medium"
-                style={{ backgroundColor: '#f5f3ef', color: '#283618' }}
-                whileHover={{ backgroundColor: '#e8e5de' }}
-                whileTap={{ backgroundColor: '#ddd9d0' }}
-                transition={{ duration: 0.15 }}
-              >
-                Verify Info
-              </motion.button>
             </div>
-          </div>
         </div>
+
+        {/* Actions row - outside overflow-hidden */}
+        {expanded && (
+          <div className="flex gap-2 pt-3">
+            <motion.button
+              onClick={openDirections}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 text-white rounded-lg text-sm font-medium"
+              style={{ backgroundColor: '#283618' }}
+              whileHover={{ scale: 1.02, backgroundColor: '#3d4f28' }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              </svg>
+              Get Directions
+            </motion.button>
+            <motion.button
+              onClick={(e) => e.stopPropagation()}
+              className="px-3 py-2 rounded-lg text-sm font-medium"
+              style={{ backgroundColor: '#e8ebd8', color: '#283618' }}
+              whileHover={{ scale: 1.02, backgroundColor: '#e8e5de' }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            >
+              Verify Info
+            </motion.button>
+          </div>
+        )}
 
         {/* Expand/collapse button */}
         <motion.button
@@ -410,9 +413,9 @@ export default function SpotPreview({
           }}
           className="w-full mt-3 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium"
           style={{ backgroundColor: '#f5f3ef', color: '#283618' }}
-          whileHover={{ backgroundColor: '#e8e5de' }}
-          whileTap={{ backgroundColor: '#ddd9d0' }}
-          transition={{ duration: 0.15 }}
+          whileHover={{ scale: 1.02, backgroundColor: '#e8e5de' }}
+          whileTap={{ scale: 0.99 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
         >
           <span>{expanded ? 'Show less' : 'View details'}</span>
           <motion.svg
