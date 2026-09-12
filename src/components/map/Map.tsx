@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { City, CITY_DEFAULTS, BoundingBox, SpotWithDetails } from '@/types';
+import { useEffect, useState, useMemo } from 'react';
+import { City, CITY_DEFAULTS, BoundingBox, SpotWithDetails, CATEGORY_INFO } from '@/types';
 
 export interface SpotHoverEvent {
   spotId: string | null;
@@ -13,9 +13,9 @@ interface MapProps {
   spots?: SpotWithDetails[];
   selectedSpotId?: string | null;
   onBoundsChange?: (bounds: BoundingBox) => void;
-  onSpotClick?: (spotId: string) => void;
+  onSpotClick?: (spotId: string, position?: { x: number; y: number }) => void;
   onSpotHover?: (spotId: string | null) => void;
-  onSpotHoverWithPosition?: (event: SpotHoverEvent) => void;
+  onMapReady?: (controls: { zoomIn: () => void; zoomOut: () => void }) => void;
 }
 
 // Leaflet requires window, so we load it dynamically
@@ -26,7 +26,7 @@ function LeafletMap({
   onBoundsChange,
   onSpotClick,
   onSpotHover,
-  onSpotHoverWithPosition,
+  onMapReady,
 }: MapProps) {
   const [components, setComponents] = useState<any>(null);
 
@@ -56,7 +56,7 @@ function LeafletMap({
     );
   }
 
-  const { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } = components;
+  const { MapContainer, TileLayer } = components;
   const { center, zoom } = CITY_DEFAULTS[city];
 
   return (
@@ -66,20 +66,20 @@ function LeafletMap({
       style={{ width: '100%', height: '100%' }}
       minZoom={10}
       maxZoom={18}
+      zoomControl={false}
     >
       <TileLayer
         attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
       />
-      <MapEvents city={city} onBoundsChange={onBoundsChange} components={components} />
+      <MapEvents city={city} onBoundsChange={onBoundsChange} onMapReady={onMapReady} components={components} />
       {spots.map((spot) => (
         <SpotMarker
           key={spot.id}
           spot={spot}
           isSelected={spot.id === selectedSpotId}
-          onClick={() => onSpotClick?.(spot.id)}
+          onClick={(position) => onSpotClick?.(spot.id, position)}
           onHover={(hovering) => onSpotHover?.(hovering ? spot.id : null)}
-          onHoverWithPosition={onSpotHoverWithPosition}
           components={components}
         />
       ))}
@@ -91,14 +91,26 @@ function LeafletMap({
 function MapEvents({
   city,
   onBoundsChange,
+  onMapReady,
   components
 }: {
   city: City;
   onBoundsChange?: (bounds: BoundingBox) => void;
+  onMapReady?: (controls: { zoomIn: () => void; zoomOut: () => void }) => void;
   components: any;
 }) {
   const { useMap, useMapEvents } = components;
   const map = useMap();
+
+  // Expose zoom controls to parent
+  useEffect(() => {
+    if (onMapReady) {
+      onMapReady({
+        zoomIn: () => map.zoomIn(),
+        zoomOut: () => map.zoomOut(),
+      });
+    }
+  }, [map, onMapReady]);
 
   // Fly to city when it changes
   useEffect(() => {
@@ -135,26 +147,30 @@ function MapEvents({
   return null;
 }
 
-// Custom spot marker
+// Custom spot marker - memoized to prevent unnecessary re-renders
 function SpotMarker({
   spot,
   isSelected,
   onClick,
   onHover,
-  onHoverWithPosition,
   components,
 }: {
   spot: SpotWithDetails;
   isSelected: boolean;
-  onClick: () => void;
+  onClick: (position: { x: number; y: number }) => void;
   onHover: (hovering: boolean) => void;
-  onHoverWithPosition?: (event: SpotHoverEvent) => void;
   components: any;
 }) {
-  const { Marker, Popup } = components;
+  const { Marker } = components;
   const L = components.L;
 
-  const icon = L.divIcon({
+  // Get category color or default
+  const categoryInfo = spot.category ? CATEGORY_INFO[spot.category] : null;
+  const markerColor = categoryInfo?.marker || '#1f2937';
+  const selectedRingColor = markerColor + '40';
+
+  // Memoize icon to only recreate when selection changes
+  const icon = useMemo(() => L.divIcon({
     className: 'custom-marker',
     html: `
       <div style="
@@ -167,50 +183,30 @@ function SpotMarker({
         color: white;
         font-size: 12px;
         font-weight: 600;
-        background: ${isSelected ? '#2563eb' : '#1f2937'};
-        transform: scale(${isSelected ? 1.25 : 1});
-        box-shadow: ${isSelected ? '0 0 0 4px rgba(59, 130, 246, 0.3)' : '0 2px 4px rgba(0,0,0,0.2)'};
-        transition: all 0.2s;
+        background: ${markerColor};
+        transform: scale(${isSelected ? 1.3 : 1}) translateZ(0);
+        box-shadow: ${isSelected ? `0 0 0 5px ${selectedRingColor}, 0 4px 12px rgba(0,0,0,0.25)` : '0 2px 6px rgba(0,0,0,0.2)'};
       ">
         ${spot.average_rating ? spot.average_rating.toFixed(1) : ''}
       </div>
     `,
     iconSize: [32, 32],
     iconAnchor: [16, 16],
-  });
+  }), [L, spot.id, spot.average_rating, markerColor, isSelected, selectedRingColor]);
 
   return (
     <Marker
       position={[spot.lat, spot.lng]}
       icon={icon}
       eventHandlers={{
-        click: onClick,
-        mouseover: (e: any) => {
-          onHover(true);
-          if (onHoverWithPosition) {
-            const containerPoint = e.containerPoint;
-            onHoverWithPosition({
-              spotId: spot.id,
-              position: { x: containerPoint.x, y: containerPoint.y },
-            });
-          }
+        click: (e: any) => {
+          const containerPoint = e.containerPoint;
+          onClick({ x: containerPoint.x, y: containerPoint.y });
         },
-        mouseout: () => {
-          onHover(false);
-          if (onHoverWithPosition) {
-            onHoverWithPosition({ spotId: null, position: null });
-          }
-        },
+        mouseover: () => onHover(true),
+        mouseout: () => onHover(false),
       }}
-    >
-      <Popup>
-        <div className="text-sm">
-          <strong>{spot.name}</strong>
-          <br />
-          {spot.neighborhood}
-        </div>
-      </Popup>
-    </Marker>
+    />
   );
 }
 

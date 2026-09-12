@@ -22,10 +22,19 @@ export default function SpotGrid({
 }: SpotGridProps) {
   if (loading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 p-4">
-        {[...Array(6)].map((_, i) => (
-          <div key={i} className="animate-pulse">
-            <div className="aspect-[4/3] bg-gray-200 rounded-xl" />
+      <div className="grid grid-cols-1 gap-3 p-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="rounded-xl overflow-hidden bg-white/50 animate-pulse">
+            <div className="aspect-[16/9] bg-stone-200" />
+            <div className="p-4 space-y-3">
+              <div className="h-5 bg-stone-200 rounded-full w-3/4" />
+              <div className="h-3 bg-stone-200 rounded-full w-1/2" />
+              <div className="flex gap-2">
+                <div className="h-6 bg-stone-200 rounded-full w-16" />
+                <div className="h-6 bg-stone-200 rounded-full w-16" />
+                <div className="h-6 bg-stone-200 rounded-full w-16" />
+              </div>
+            </div>
           </div>
         ))}
       </div>
@@ -36,7 +45,7 @@ export default function SpotGrid({
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center">
         <svg
-          className="w-16 h-16 text-gray-300 mb-4"
+          className="w-16 h-16 text-stone-300 mb-4"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -54,8 +63,8 @@ export default function SpotGrid({
             d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
           />
         </svg>
-        <h3 className="text-lg font-medium text-gray-900 mb-1">No spots found</h3>
-        <p className="text-gray-500 max-w-xs">
+        <h3 className="text-lg font-medium text-stone-900 mb-1">No spots found</h3>
+        <p className="text-stone-500 max-w-xs">
           Try adjusting your filters or zooming out on the map to find more workspaces.
         </p>
       </div>
@@ -63,7 +72,7 @@ export default function SpotGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 p-4 overflow-y-auto">
+    <div className="grid grid-cols-1 gap-4 p-4 px-5 overflow-y-auto">
       {spots.map((spot) => (
         <SpotCard
           key={spot.id}

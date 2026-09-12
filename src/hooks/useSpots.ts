@@ -53,6 +53,9 @@ export function useSpots({ city, bounds, filters }: UseSpotsOptions): UseSpotsRe
         if (filters?.neighborhood) {
           mockSpots = mockSpots.filter((spot) => spot.neighborhood === filters.neighborhood);
         }
+        if (filters?.category) {
+          mockSpots = mockSpots.filter((spot) => spot.category === filters.category);
+        }
         if (filters?.minWifi) {
           mockSpots = mockSpots.filter(
             (spot) => spot.traits && (spot.traits.wifi_quality || 0) >= filters.minWifi!

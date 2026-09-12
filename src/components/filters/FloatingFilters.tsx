@@ -1,6 +1,8 @@
 'use client';
 
-import { City, SpotFilters, CITY_DEFAULTS } from '@/types';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { City, SpotFilters, CITY_DEFAULTS, CATEGORY_INFO, SpotCategory } from '@/types';
 
 interface FloatingFiltersProps {
   city: City;
@@ -15,32 +17,133 @@ export default function FloatingFilters({
   onCityChange,
   onFiltersChange,
 }: FloatingFiltersProps) {
+  const [categoryOpen, setCategoryOpen] = useState(false);
+
   const updateFilter = <K extends keyof SpotFilters>(key: K, value: SpotFilters[K]) => {
     onFiltersChange({ ...filters, [key]: value });
   };
 
   const cities = Object.entries(CITY_DEFAULTS) as [City, typeof CITY_DEFAULTS[City]][];
+  const categories = Object.entries(CATEGORY_INFO) as [SpotCategory, typeof CATEGORY_INFO[SpotCategory]][];
+  const selectedCategory = filters.category ? CATEGORY_INFO[filters.category] : null;
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {/* City selector */}
-      <div className="flex items-center bg-white rounded-full shadow-md border border-gray-100 p-0.5">
+    <div className="flex flex-wrap items-center gap-2">
+      {/* City selector - h-9 to match other buttons */}
+      <div className="flex items-center h-9 bg-white/95 backdrop-blur-sm rounded-full shadow-md border border-stone-200 px-1 overflow-hidden">
         {cities.map(([key, config]) => (
-          <button
+          <motion.button
             key={key}
             onClick={() => onCityChange(key)}
-            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-              city === key
-                ? 'bg-gray-900 text-white'
-                : 'text-gray-600 hover:text-gray-900'
+            className={`h-7 px-3 rounded-full text-xs font-medium relative ${
+              city === key ? 'text-white' : 'text-stone-600 hover:text-stone-900'
             }`}
+            whileHover={{ scale: city === key ? 1 : 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
-            {config.label}
-          </button>
+            {city === key && (
+              <motion.div
+                layoutId="cityBg"
+                className="absolute inset-0 rounded-full"
+                style={{ backgroundColor: '#283618' }}
+                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+              />
+            )}
+            <span className="relative z-10">{config.label}</span>
+          </motion.button>
         ))}
       </div>
 
-      {/* Filter pills */}
+      {/* Category dropdown - h-9 */}
+      <div className="relative">
+        <motion.button
+          onClick={() => setCategoryOpen(!categoryOpen)}
+          className="flex items-center gap-1.5 h-9 bg-white/95 backdrop-blur-sm rounded-full shadow-md border border-stone-200 px-3 text-xs font-medium text-stone-700 cursor-pointer hover:border-stone-300"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          layout
+        >
+          <motion.span layout="position" className="flex items-center gap-1.5">
+            {selectedCategory && (
+              <span
+                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                style={{ backgroundColor: selectedCategory.marker }}
+              />
+            )}
+            {selectedCategory ? `${selectedCategory.icon} ${selectedCategory.label}` : 'All types'}
+          </motion.span>
+          <motion.svg
+            className="w-3 h-3 text-stone-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            animate={{ rotate: categoryOpen ? 180 : 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </motion.svg>
+        </motion.button>
+
+        <AnimatePresence>
+          {categoryOpen && (
+            <>
+              <motion.div
+                className="fixed inset-0 z-40"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setCategoryOpen(false)}
+              />
+              <motion.div
+                className="absolute top-full left-0 mt-2 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-stone-200 overflow-hidden z-50 min-w-[140px]"
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+              >
+                <motion.button
+                  onClick={() => {
+                    updateFilter('category', undefined);
+                    setCategoryOpen(false);
+                  }}
+                  className={`w-full px-3 py-2 text-left text-xs font-medium transition-colors ${
+                    !filters.category ? 'text-[#283618]' : 'text-stone-600 hover:bg-stone-50'
+                  }`}
+                  style={{ backgroundColor: !filters.category ? '#fefae0' : 'transparent' }}
+                  whileHover={{ x: 2 }}
+                >
+                  All types
+                </motion.button>
+                {categories.map(([key, info], i) => (
+                  <motion.button
+                    key={key}
+                    onClick={() => {
+                      updateFilter('category', key);
+                      setCategoryOpen(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left text-xs font-medium transition-colors flex items-center gap-2 ${
+                      filters.category === key ? 'bg-stone-100' : 'text-stone-600 hover:bg-stone-50'
+                    }`}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.03 }}
+                    whileHover={{ x: 2 }}
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: info.marker }}
+                    />
+                    <span>{info.icon}</span>
+                    <span className="flex-1">{info.label}</span>
+                  </motion.button>
+                ))}
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Filter pills - all h-9 */}
       <FilterPill
         icon={
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -84,18 +187,26 @@ export default function FloatingFilters({
         onClick={() => updateFilter('minTableSpace', filters.minTableSpace === 4 ? undefined : 4)}
       />
 
-      {/* Clear filters */}
-      {Object.values(filters).some((v) => v !== undefined) && (
-        <button
-          onClick={() => onFiltersChange({})}
-          className="flex items-center gap-1 px-2 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-xs font-medium text-gray-600 transition-colors shadow-sm"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-          Clear
-        </button>
-      )}
+      {/* Clear filters - h-9 */}
+      <AnimatePresence>
+        {Object.values(filters).some((v) => v !== undefined) && (
+          <motion.button
+            onClick={() => onFiltersChange({})}
+            className="flex items-center gap-1.5 h-9 px-3 rounded-full text-xs font-medium shadow-sm"
+            style={{ backgroundColor: '#fefae0', color: '#283618' }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            whileHover={{ scale: 1.05, backgroundColor: '#f5f0d0' }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Clear
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -109,16 +220,34 @@ interface FilterPillProps {
 
 function FilterPill({ icon, label, active, onClick }: FilterPillProps) {
   return (
-    <button
+    <motion.button
       onClick={onClick}
-      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium transition-all shadow-sm border ${
+      className={`flex items-center gap-1.5 h-9 px-3 rounded-full text-xs font-medium shadow-sm border relative overflow-hidden ${
         active
-          ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-          : 'bg-white border-gray-100 text-gray-600 hover:border-gray-300 hover:text-gray-900'
+          ? 'border-[#bc6c25] text-[#283618]'
+          : 'border-stone-200 text-stone-600 hover:border-stone-300 hover:text-stone-900'
       }`}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      layout
     >
-      {icon}
-      {label}
-    </button>
+      <motion.div
+        className="absolute inset-0"
+        style={{ backgroundColor: '#fefae0' }}
+        initial={false}
+        animate={{ opacity: active ? 1 : 0 }}
+        transition={{ duration: 0.2 }}
+      />
+      <motion.div
+        className="absolute inset-0 bg-white"
+        initial={false}
+        animate={{ opacity: active ? 0 : 1 }}
+        transition={{ duration: 0.2 }}
+      />
+      <span className="relative z-10 flex items-center gap-1.5">
+        {icon}
+        {label}
+      </span>
+    </motion.button>
   );
 }

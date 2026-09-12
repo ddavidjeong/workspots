@@ -84,12 +84,12 @@ function TraitBadge({ traitKey, value, compact = false, variant = 'default' }: T
   const isMedium = info.inverted ? value === 3 : value === 3;
 
   const colorClass = variant === 'overlay'
-    ? 'bg-black/60 backdrop-blur-sm text-white'
+    ? 'bg-stone-900/70 backdrop-blur-sm text-white'
     : isGood
-      ? 'bg-green-500/90 text-white'
+      ? 'bg-emerald-100 text-emerald-800'
       : isMedium
-        ? 'bg-yellow-500/90 text-white'
-        : 'bg-gray-500/90 text-white';
+        ? 'bg-amber-100 text-amber-800'
+        : 'bg-stone-100 text-stone-600';
 
   if (compact) {
     return (

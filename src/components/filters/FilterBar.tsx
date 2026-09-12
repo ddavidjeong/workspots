@@ -1,6 +1,6 @@
 'use client';
 
-import { City, SpotFilters, TRAIT_INFO, CITY_DEFAULTS } from '@/types';
+import { City, SpotFilters, CITY_DEFAULTS } from '@/types';
 
 interface FilterBarProps {
   city: City;

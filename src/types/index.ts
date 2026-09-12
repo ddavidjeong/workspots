@@ -4,6 +4,16 @@ export type City = 'nyc' | 'sf' | 'fortlee';
 
 export type LayoutMode = 'map' | 'split';
 
+export type SpotCategory = 'cafe' | 'park' | 'library' | 'coworking' | 'other';
+
+export const CATEGORY_INFO: Record<SpotCategory, { label: string; icon: string; color: string; bg: string; marker: string }> = {
+  cafe: { label: 'Cafe', icon: '☕', color: '#bc6c25', bg: '#fefae0', marker: '#bc6c25' },      // Copper - warm coffee brown
+  park: { label: 'Park', icon: '🌿', color: '#606c38', bg: '#e8ebd8', marker: '#606c38' },      // Olive Leaf - natural green
+  library: { label: 'Library', icon: '📖', color: '#283618', bg: '#f1faee', marker: '#b3cec8' }, // Soft mint
+  coworking: { label: 'Coworking', icon: '💻', color: '#669bbc', bg: '#e8f1f6', marker: '#669bbc' }, // Slate blue
+  other: { label: 'Other', icon: '📍', color: '#6b5c4d', bg: '#f5f3ef', marker: '#6b5c4d' },    // Warm gray-brown
+};
+
 export interface Spot {
   id: string;
   name: string;
@@ -13,11 +23,16 @@ export interface Spot {
   lat: number;
   lng: number;
   place_id: string | null;
+  category?: SpotCategory;
   hours: Record<string, { open: string; close: string }> | null;
   website: string | null;
   phone: string | null;
   created_at: string;
   updated_at: string;
+  // Verification tracking
+  last_verified_at?: string | null;
+  last_verified_by?: string | null;
+  verification_count?: number;
 }
 
 export interface Photo {
@@ -96,6 +111,7 @@ export interface BoundingBox {
 export interface SpotFilters {
   city?: City;
   neighborhood?: string;
+  category?: SpotCategory;
   minWifi?: number;
   minOutlets?: number;
   maxNoise?: number;
