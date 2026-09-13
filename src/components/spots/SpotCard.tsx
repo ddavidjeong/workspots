@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, memo } from 'react';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { SpotWithDetails, CATEGORY_INFO } from '@/types';
 import TraitBadges from './TraitBadges';
 
@@ -24,6 +24,7 @@ const SpotCard = memo(function SpotCard({
   const [expanded, setExpanded] = useState(false);
   const [currentPhoto, setCurrentPhoto] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
+  const [showCarousel, setShowCarousel] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const photos = spot.photos || [];
@@ -100,14 +101,17 @@ const SpotCard = memo(function SpotCard({
     window.open(url, '_blank');
   };
 
+  const ringColor = categoryInfo?.marker || '#bc6c25';
+
   return (
     <div
       className={`
-        group relative rounded-xl bg-white transition-shadow duration-200 select-none
+        group relative rounded-xl bg-white transition-all duration-200 select-none
         ${isSelected
-          ? 'ring-2 ring-[#bc6c25] ring-offset-2 shadow-lg'
+          ? 'ring-2 ring-offset-2 shadow-lg'
           : 'ring-1 ring-stone-200/50 hover:shadow-lg'}
       `}
+      style={isSelected ? { '--tw-ring-color': ringColor } as React.CSSProperties : undefined}
       onMouseEnter={() => onHover?.(true)}
       onMouseLeave={() => onHover?.(false)}
     >
@@ -116,6 +120,24 @@ const SpotCard = memo(function SpotCard({
         className="relative bg-stone-100 overflow-hidden rounded-t-xl transition-all duration-250 ease-out"
         style={{ height: expanded ? 200 : 180 }}
       >
+        {/* Center expand button - only appears when hovering center area */}
+        {hasPhoto && photos.length > 0 && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+            <button
+              className="w-16 h-16 flex items-center justify-center pointer-events-auto group/expand"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowCarousel(true);
+              }}
+            >
+              <span className="w-10 h-10 bg-black/40 group-hover/expand:bg-black/60 rounded-full flex items-center justify-center text-white transition-all opacity-0 group-hover/expand:opacity-100 shadow-lg">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                </svg>
+              </span>
+            </button>
+          </div>
+        )}
         {hasPhoto ? (
           <>
             <div
@@ -327,6 +349,117 @@ const SpotCard = memo(function SpotCard({
           {expanded ? 'Show less' : 'View details'}
         </button>
       </div>
+
+      {/* Photo Carousel Overlay */}
+      <AnimatePresence>
+        {showCarousel && photos.length > 0 && (
+          <motion.div
+            className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowCarousel(false)}
+          >
+            {/* Close button */}
+            <button
+              className="absolute top-4 right-4 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors z-10"
+              onClick={() => setShowCarousel(false)}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {/* Spot name */}
+            <div className="absolute top-4 left-4 text-white">
+              <h3 className="text-lg font-semibold">{spot.name}</h3>
+              <p className="text-sm text-white/70">{currentPhoto + 1} / {photos.length}</p>
+            </div>
+
+            {/* Main image with slide animation */}
+            <div
+              className="relative w-full max-w-4xl h-[70vh] mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentPhoto}
+                  className="absolute inset-0"
+                  initial={{ opacity: 0, x: 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -30 }}
+                  transition={{ duration: 0.2, ease: 'easeOut' }}
+                >
+                  <Image
+                    src={photos[currentPhoto]?.url || ''}
+                    alt={`${spot.name} photo ${currentPhoto + 1}`}
+                    fill
+                    className="object-contain"
+                    sizes="100vw"
+                    priority
+                  />
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            {/* Nav arrows */}
+            {photos.length > 1 && (
+              <>
+                <button
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentPhoto((prev) => (prev - 1 + photos.length) % photos.length);
+                  }}
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <button
+                  className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentPhoto((prev) => (prev + 1) % photos.length);
+                  }}
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </>
+            )}
+
+            {/* Thumbnail strip */}
+            {photos.length > 1 && (
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+                {photos.map((photo, i) => (
+                  <button
+                    key={photo?.id || i}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentPhoto(i);
+                    }}
+                    className={`relative w-16 h-12 rounded-lg overflow-hidden transition-all ${
+                      i === currentPhoto
+                        ? 'ring-2 ring-white scale-110'
+                        : 'opacity-50 hover:opacity-80'
+                    }`}
+                  >
+                    <Image
+                      src={photo?.url || ''}
+                      alt={`Thumbnail ${i + 1}`}
+                      fill
+                      className="object-cover"
+                      sizes="64px"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 });

@@ -8,6 +8,7 @@ interface FloatingFiltersProps {
   city: City;
   filters: SpotFilters;
   spotCount?: number;
+  showCitySelector?: boolean;
   onCityChange: (city: City) => void;
   onFiltersChange: (filters: SpotFilters) => void;
 }
@@ -16,6 +17,7 @@ export default function FloatingFilters({
   city,
   filters,
   spotCount = 0,
+  showCitySelector = true,
   onCityChange,
   onFiltersChange,
 }: FloatingFiltersProps) {
@@ -32,29 +34,31 @@ export default function FloatingFilters({
   return (
     <motion.div layout className="flex flex-wrap items-center gap-2">
       {/* City selector - h-9 to match other buttons */}
-      <div className="flex items-center h-9 bg-white/95 backdrop-blur-sm rounded-full shadow-md border border-stone-200 px-1 overflow-hidden">
-        {cities.map(([key, config]) => (
-          <motion.button
-            key={key}
-            onClick={() => onCityChange(key)}
-            className={`h-7 px-3 rounded-full text-xs font-medium relative ${
-              city === key ? 'text-white' : 'text-stone-600 hover:text-stone-900'
-            }`}
-            whileHover={{ scale: city === key ? 1 : 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            {city === key && (
-              <motion.div
-                layoutId="cityBg"
-                className="absolute inset-0 rounded-full"
-                style={{ backgroundColor: '#283618' }}
-                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-              />
-            )}
-            <span className="relative z-10">{config.label}</span>
-          </motion.button>
-        ))}
-      </div>
+      {showCitySelector && (
+        <div className="flex items-center h-9 bg-white/95 backdrop-blur-sm rounded-full shadow-md border border-stone-200 px-1 overflow-hidden">
+          {cities.map(([key, config]) => (
+            <motion.button
+              key={key}
+              onClick={() => onCityChange(key)}
+              className={`h-7 px-3 rounded-full text-xs font-medium relative ${
+                city === key ? 'text-white' : 'text-stone-600 hover:text-stone-900'
+              }`}
+              whileHover={{ scale: city === key ? 1 : 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              {city === key && (
+                <motion.div
+                  layoutId="cityBg"
+                  className="absolute inset-0 rounded-full"
+                  style={{ backgroundColor: '#283618' }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                />
+              )}
+              <span className="relative z-10">{config.label}</span>
+            </motion.button>
+          ))}
+        </div>
+      )}
 
       {/* Category dropdown - h-9 */}
       <div className="relative">
@@ -211,14 +215,16 @@ export default function FloatingFilters({
         )}
       </AnimatePresence>
 
-      {/* Spot count with flip animation */}
-      <motion.div
-        layout="position"
-        className="flex items-center h-9 bg-white/95 backdrop-blur-sm rounded-full shadow-md border border-stone-200 px-3 gap-1"
-        transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-      >
-        <FlipCounter value={spotCount} /><span className="text-xs font-medium text-stone-500">spots</span>
-      </motion.div>
+      {/* Spot count with flip animation - only show if spotCount provided */}
+      {spotCount > 0 && (
+        <motion.div
+          layout="position"
+          className="flex items-center h-9 bg-white/95 backdrop-blur-sm rounded-full shadow-md border border-stone-200 px-3 gap-1"
+          transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+        >
+          <FlipCounter value={spotCount} /><span className="text-xs font-medium text-stone-500">spots</span>
+        </motion.div>
+      )}
     </motion.div>
   );
 }

@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { SpotWithDetails } from '@/types';
 import SpotCard from './SpotCard';
 
@@ -20,22 +22,41 @@ export default function SpotGrid({
   onSpotHover,
   loading = false,
 }: SpotGridProps) {
-  if (loading) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const prevSelectedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (selectedSpotId && selectedSpotId !== prevSelectedRef.current && containerRef.current) {
+      const card = containerRef.current.querySelector(`[data-spot-id="${selectedSpotId}"]`);
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+    prevSelectedRef.current = selectedSpotId ?? null;
+  }, [selectedSpotId]);
+
+  // Only show skeleton if loading AND no spots (don't flash when we have data)
+  if (loading && spots.length === 0) {
     return (
       <div className="grid grid-cols-1 gap-3 p-4">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="rounded-xl overflow-hidden bg-white/50 animate-pulse">
-            <div className="aspect-[16/9] bg-stone-200" />
+          <motion.div
+            key={i}
+            className="rounded-xl overflow-hidden bg-white/50"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.05 }}
+          >
+            <div className="aspect-[16/9] bg-stone-200 animate-pulse" />
             <div className="p-4 space-y-3">
-              <div className="h-5 bg-stone-200 rounded-full w-3/4" />
-              <div className="h-3 bg-stone-200 rounded-full w-1/2" />
+              <div className="h-5 bg-stone-200 rounded-full w-3/4 animate-pulse" />
+              <div className="h-3 bg-stone-200 rounded-full w-1/2 animate-pulse" />
               <div className="flex gap-2">
-                <div className="h-6 bg-stone-200 rounded-full w-16" />
-                <div className="h-6 bg-stone-200 rounded-full w-16" />
-                <div className="h-6 bg-stone-200 rounded-full w-16" />
+                <div className="h-6 bg-stone-200 rounded-full w-16 animate-pulse" />
+                <div className="h-6 bg-stone-200 rounded-full w-16 animate-pulse" />
               </div>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
     );
@@ -72,9 +93,19 @@ export default function SpotGrid({
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4 pb-8">
+    <div
+      ref={containerRef}
+      className="grid gap-4 p-4 pb-8"
+      style={{
+        gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))',
+      }}
+    >
       {spots.map((spot) => (
-        <div key={spot.id} className="relative" style={{ margin: '4px' }}>
+        <div
+          key={spot.id}
+          data-spot-id={spot.id}
+          className="relative"
+        >
           <SpotCard
             spot={spot}
             isSelected={spot.id === selectedSpotId}

@@ -228,39 +228,46 @@ function SpotMarker({
 }) {
   const { Marker } = components;
   const L = components.L;
+  const markerRef = useRef<any>(null);
 
   // Get category color or default
   const categoryInfo = spot.category ? CATEGORY_INFO[spot.category] : null;
   const markerColor = categoryInfo?.marker || '#1f2937';
   const selectedRingColor = markerColor + '40';
 
-  // Memoize icon to only recreate when selection changes
+  // Create stable icon - selection handled via DOM class toggle for smooth transitions
   const icon = useMemo(() => L.divIcon({
-    className: isExiting ? 'custom-marker marker-exit' : 'custom-marker',
+    className: `custom-marker${isExiting ? ' marker-exit' : ''}`,
     html: `
-      <div style="
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 12px;
-        font-weight: 600;
-        background: ${markerColor};
-        transform: scale(${isSelected ? 1.3 : 1}) translateZ(0);
-        box-shadow: ${isSelected ? `0 0 0 5px ${selectedRingColor}, 0 4px 12px rgba(0,0,0,0.25)` : '0 2px 6px rgba(0,0,0,0.2)'};
+      <div class="marker-inner" style="
+        --marker-color: ${markerColor};
+        --marker-ring: ${selectedRingColor};
       ">
         ${spot.average_rating ? spot.average_rating.toFixed(1) : ''}
       </div>
     `,
     iconSize: [32, 32],
     iconAnchor: [16, 16],
-  }), [L, spot.id, spot.average_rating, markerColor, isSelected, selectedRingColor, isExiting]);
+  }), [L, spot.id, spot.average_rating, markerColor, selectedRingColor, isExiting]);
+
+  // Toggle selected class on existing DOM element for smooth CSS transition
+  useEffect(() => {
+    const marker = markerRef.current;
+    if (marker) {
+      const el = marker.getElement();
+      if (el) {
+        if (isSelected) {
+          el.classList.add('marker-selected');
+        } else {
+          el.classList.remove('marker-selected');
+        }
+      }
+    }
+  }, [isSelected]);
 
   return (
     <Marker
+      ref={markerRef}
       position={[spot.lat, spot.lng]}
       icon={icon}
       eventHandlers={{
