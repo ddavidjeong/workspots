@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { SpotWithDetails, BoundingBox, SpotFilters, City } from '@/types';
-import { getMockSpots, getMockSpotById } from '@/lib/mock-data';
 
 // Check if Supabase is configured
 const SUPABASE_CONFIGURED =
@@ -36,6 +35,7 @@ export function useSpots({ city, bounds, filters }: UseSpotsOptions): UseSpotsRe
       if (!SUPABASE_CONFIGURED) {
         // Use mock data
         await new Promise((resolve) => setTimeout(resolve, 300)); // Simulate network delay
+        const { getMockSpots } = await import('@/lib/mock-data');
         let mockSpots = getMockSpots(city);
 
         // Apply bounding box filter
@@ -199,6 +199,7 @@ export function useSpots({ city, bounds, filters }: UseSpotsOptions): UseSpotsRe
 // Get a single spot by ID
 export async function getSpotById(id: string): Promise<SpotWithDetails | null> {
   if (!SUPABASE_CONFIGURED) {
+    const { getMockSpotById } = await import('@/lib/mock-data');
     return getMockSpotById(id);
   }
 

@@ -6,7 +6,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { SpotWithDetails, TRAIT_INFO, TraitKey } from '@/types';
 import { getSpotById } from '@/hooks/useSpots';
-import TraitBadges from '@/components/spots/TraitBadges';
 
 export default function SpotDetailPage() {
   const params = useParams();

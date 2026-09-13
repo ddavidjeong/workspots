@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SpotWithDetails } from '@/types';
 import TraitBadges from './TraitBadges';
+import { formatTime, getOpenStatus, openDirections } from '@/lib/spot-format';
 
 interface SpotPreviewProps {
   spot: SpotWithDetails;
@@ -47,15 +48,6 @@ export default function SpotPreview({
       setCurrentPhoto((prev) => (prev - 1 + photos.length) % photos.length);
     }
   }, [photos.length]);
-
-  // Reset when spot changes
-  useEffect(() => {
-    setCurrentPhoto(0);
-    setExpanded(false);
-    setPosition(initialPosition);
-    setHasDragged(false);
-    hasPositioned.current = false;
-  }, [spot.id, initialPosition]);
 
   // Initial viewport check - runs once
   useEffect(() => {
@@ -122,13 +114,6 @@ export default function SpotPreview({
     };
   }, [isDragging]);
 
-  const formatTime = (time: string) => {
-    const [h, m] = time.split(':').map(Number);
-    const hour = h % 12 || 12;
-    const ampm = h >= 12 ? 'pm' : 'am';
-    return m === 0 ? `${hour}${ampm}` : `${hour}:${m.toString().padStart(2, '0')}${ampm}`;
-  };
-
   const formatVerifiedDate = (date: string | null) => {
     if (!date) return null;
     const d = new Date(date);
@@ -141,36 +126,7 @@ export default function SpotPreview({
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  const isOpenNow = () => {
-    if (!spot.hours) return null;
-    const now = new Date();
-    const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-    const today = days[now.getDay()];
-    const todayHours = spot.hours[today];
-    if (!todayHours) return null;
-
-    const currentTime = now.getHours() * 100 + now.getMinutes();
-    const [openH, openM] = todayHours.open.split(':').map(Number);
-    const [closeH, closeM] = todayHours.close.split(':').map(Number);
-    const openTime = openH * 100 + openM;
-    const closeTime = closeH * 100 + closeM;
-
-    if (currentTime >= openTime && currentTime < closeTime) {
-      return { open: true, closeTime: formatTime(todayHours.close) };
-    }
-    return { open: false, openTime: formatTime(todayHours.open) };
-  };
-
-  const openStatus = isOpenNow();
-
-  const openDirections = () => {
-    const query = encodeURIComponent(spot.address);
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const url = isIOS
-      ? `maps://maps.apple.com/?daddr=${query}`
-      : `https://www.google.com/maps/dir/?api=1&destination=${query}`;
-    window.open(url, '_blank');
-  };
+  const openStatus = getOpenStatus(spot.hours);
 
   return (
     <motion.div
@@ -396,7 +352,7 @@ export default function SpotPreview({
         {expanded && (
           <div className="flex gap-2 pt-3">
             <motion.button
-              onClick={openDirections}
+              onClick={() => openDirections(spot.address)}
               className="flex-1 flex items-center justify-center gap-1.5 py-2 text-white rounded-lg text-sm font-medium"
               style={{ backgroundColor: '#283618' }}
               whileHover={{ scale: 1.02, backgroundColor: '#3d4f28' }}

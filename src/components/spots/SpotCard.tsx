@@ -5,11 +5,13 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SpotWithDetails, CATEGORY_INFO } from '@/types';
 import TraitBadges from './TraitBadges';
+import { formatTime, getOpenStatus, openDirections } from '@/lib/spot-format';
 
 interface SpotCardProps {
   spot: SpotWithDetails;
   isSelected?: boolean;
   isHovered?: boolean;
+  isTransitioning?: boolean;
   onClick?: () => void;
   onHover?: (hovering: boolean) => void;
 }
@@ -18,6 +20,7 @@ const SpotCard = memo(function SpotCard({
   spot,
   isSelected = false,
   isHovered = false,
+  isTransitioning = false,
   onClick,
   onHover,
 }: SpotCardProps) {
@@ -38,13 +41,6 @@ const SpotCard = memo(function SpotCard({
     }
   }, [expanded]);
 
-  const formatTime = (time: string) => {
-    const [h, m] = time.split(':').map(Number);
-    const hour = h % 12 || 12;
-    const ampm = h >= 12 ? 'pm' : 'am';
-    return m === 0 ? `${hour}${ampm}` : `${hour}:${m.toString().padStart(2, '0')}${ampm}`;
-  };
-
   const formatVerifiedDate = (date: string | null) => {
     if (!date) return null;
     const d = new Date(date);
@@ -58,27 +54,7 @@ const SpotCard = memo(function SpotCard({
     return d.toLocaleDateString();
   };
 
-  const isOpenNow = () => {
-    if (!spot.hours) return null;
-    const now = new Date();
-    const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-    const today = days[now.getDay()];
-    const todayHours = spot.hours[today];
-    if (!todayHours) return null;
-
-    const currentTime = now.getHours() * 100 + now.getMinutes();
-    const [openH, openM] = todayHours.open.split(':').map(Number);
-    const [closeH, closeM] = todayHours.close.split(':').map(Number);
-    const openTime = openH * 100 + openM;
-    const closeTime = closeH * 100 + closeM;
-
-    if (currentTime >= openTime && currentTime < closeTime) {
-      return { open: true, closeTime: formatTime(todayHours.close) };
-    }
-    return { open: false, openTime: formatTime(todayHours.open) };
-  };
-
-  const openStatus = isOpenNow();
+  const openStatus = getOpenStatus(spot.hours);
 
   const nextPhoto = () => {
     if (photos.length > 1) {
@@ -90,15 +66,6 @@ const SpotCard = memo(function SpotCard({
     if (photos.length > 1) {
       setCurrentPhoto((prev) => (prev - 1 + photos.length) % photos.length);
     }
-  };
-
-  const openDirections = () => {
-    const query = encodeURIComponent(spot.address);
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const url = isIOS
-      ? `maps://maps.apple.com/?daddr=${query}`
-      : `https://www.google.com/maps/dir/?api=1&destination=${query}`;
-    window.open(url, '_blank');
   };
 
   const ringColor = categoryInfo?.marker || '#bc6c25';
@@ -150,7 +117,7 @@ const SpotCard = memo(function SpotCard({
                     src={photo?.url || ''}
                     alt={`Interior of ${spot.name}`}
                     fill
-                    className="object-cover"
+                    className={`object-cover transition-opacity duration-150 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}
                     sizes="(max-width: 768px) 100vw, 400px"
                   />
                 </div>
@@ -307,7 +274,7 @@ const SpotCard = memo(function SpotCard({
         {expanded && (
           <div className="flex gap-2 pt-3">
             <button
-              onClick={(e) => { e.stopPropagation(); openDirections(); }}
+              onClick={(e) => { e.stopPropagation(); openDirections(spot.address); }}
               className="flex-1 flex items-center justify-center gap-1.5 py-2 text-white rounded-lg text-sm font-medium transition-all duration-150 hover:scale-[1.02] active:scale-[0.98]"
               style={{ backgroundColor: '#283618' }}
             >

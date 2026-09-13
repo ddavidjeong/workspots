@@ -12,6 +12,7 @@ interface SpotGridProps {
   onSpotClick?: (spotId: string) => void;
   onSpotHover?: (spotId: string | null) => void;
   loading?: boolean;
+  isTransitioning?: boolean;
 }
 
 export default function SpotGrid({
@@ -21,6 +22,7 @@ export default function SpotGrid({
   onSpotClick,
   onSpotHover,
   loading = false,
+  isTransitioning = false,
 }: SpotGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const prevSelectedRef = useRef<string | null>(null);
@@ -110,6 +112,7 @@ export default function SpotGrid({
             spot={spot}
             isSelected={spot.id === selectedSpotId}
             isHovered={spot.id === hoveredSpotId}
+            isTransitioning={isTransitioning}
             onClick={() => onSpotClick?.(spot.id)}
             onHover={(hovering) => onSpotHover?.(hovering ? spot.id : null)}
           />

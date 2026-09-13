@@ -33,8 +33,18 @@ export default function Home() {
   const [layout, setLayout] = useState<LayoutMode>('map');
   const [mapControls, setMapControls] = useState<{ zoomIn: () => void; zoomOut: () => void } | null>(null);
   const [showAddSpot, setShowAddSpot] = useState(false);
-  const [panelWidth, setPanelWidth] = useState(400);
+  const [panelWidth, setPanelWidth] = useState(330);
   const [isResizing, setIsResizing] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const handlePanelResize = (width: number) => {
+    const crossingThreshold = (panelWidth <= 500 && width > 500) || (panelWidth > 500 && width <= 500);
+    if (crossingThreshold) {
+      setIsTransitioning(true);
+      setTimeout(() => setIsTransitioning(false), 50);
+    }
+    setPanelWidth(width);
+  };
 
   const { spots, loading } = useSpots({ city, bounds, filters });
 
@@ -432,29 +442,37 @@ export default function Home() {
           </motion.div>
 
           {/* Spots count - top right on map, only when panel is expanded */}
-          {panelWidth > 500 && (
-            <motion.div
-              layoutId="spotsCount"
-              className="absolute top-4 z-50 flex items-center h-9 bg-white/95 backdrop-blur-sm rounded-full shadow-md border border-stone-200 px-3 gap-1.5"
-              style={{ right: panelWidth + 16, transition: isResizing ? 'none' : 'right 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
-              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            >
-              <span className="text-sm font-semibold" style={{ color: '#283618' }}>{spots.length}</span>
-              <span className="text-xs text-stone-500">spots</span>
-            </motion.div>
-          )}
+          <AnimatePresence>
+            {panelWidth > 500 && (
+              <motion.div
+                key="mapSpotsCount"
+                className="absolute top-4 z-50 flex items-center h-9 bg-white/95 backdrop-blur-sm rounded-full shadow-md border border-stone-200 px-3 gap-1.5"
+                style={{ right: panelWidth + 16, transition: isResizing ? 'none' : 'right 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+              >
+                <span className="text-sm font-semibold" style={{ color: '#283618' }}>{spots.length}</span>
+                <span className="text-xs text-stone-500">spots</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {/* Sliding list panel from right - glass effect */}
+          </>
+      )}
+
+      {/* Sliding list panel - outside layout conditional for exit animation */}
+      <AnimatePresence>
+        {layout === 'split' && (
           <motion.div
-            key={`list-panel-${layout}`}
+            key="list-panel"
             className="absolute top-0 right-0 bottom-0 bg-gradient-to-r from-white/20 to-white/35 backdrop-blur-lg shadow-2xl z-40 border-l border-white/10 flex flex-col"
             style={{ width: panelWidth, transition: isResizing ? 'none' : 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
-            initial={{ x: '100%', opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{
-              x: { type: 'spring', stiffness: 300, damping: 28 },
-              opacity: { duration: 0.15 }
-            }}
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
           >
             {/* Resize handle */}
             <div
@@ -474,7 +492,7 @@ export default function Home() {
               transition={{ type: 'spring', stiffness: 500, damping: 30 }}
             >
               <button
-                onClick={() => setPanelWidth(620)}
+                onClick={() => handlePanelResize(620)}
                 className="h-7 w-7 rounded-full flex items-center justify-center text-stone-500 hover:bg-stone-100 transition-colors"
                 title="Expand"
               >
@@ -485,7 +503,7 @@ export default function Home() {
               <AnimatePresence mode="popLayout">
                 {panelWidth > 500 && (
                   <motion.button
-                    onClick={() => setPanelWidth(300)}
+                    onClick={() => handlePanelResize(330)}
                     className="h-7 w-7 rounded-full flex items-center justify-center text-stone-500 hover:bg-stone-100 transition-colors overflow-hidden"
                     title="Minimize"
                     initial={{ width: 0, opacity: 0, marginLeft: 0 }}
@@ -517,24 +535,37 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, type: 'spring', stiffness: 400, damping: 25 }}
             >
-              {panelWidth > 500 ? (
-                <FloatingFilters
-                  city={city}
-                  filters={filters}
-                  showCitySelector={false}
-                  onCityChange={handleCityChange}
-                  onFiltersChange={setFilters}
-                />
-              ) : (
-                <motion.div
-                  layoutId="spotsCount"
-                  className="flex items-center gap-1.5"
-                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                >
-                  <span className="text-sm font-semibold" style={{ color: '#283618' }}>{spots.length}</span>
-                  <span className="text-xs text-stone-500">spots</span>
-                </motion.div>
-              )}
+              <AnimatePresence mode="wait">
+                {panelWidth > 500 && !isTransitioning ? (
+                  <motion.div
+                    key="filters"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    <FloatingFilters
+                      city={city}
+                      filters={filters}
+                      showCitySelector={false}
+                      onCityChange={handleCityChange}
+                      onFiltersChange={setFilters}
+                    />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="spots"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="flex items-center gap-1.5"
+                  >
+                    <span className="text-sm font-semibold" style={{ color: '#283618' }}>{spots.length}</span>
+                    <span className="text-xs text-stone-500">spots</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
 
             <div className="flex-1 overflow-y-auto">
@@ -545,11 +576,12 @@ export default function Home() {
                 onSpotClick={handleSpotClick}
                 onSpotHover={handleSpotHover}
                 loading={loading}
+                isTransitioning={isTransitioning}
               />
             </div>
           </motion.div>
-        </>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* Add Spot Modal */}
       <AddSpotModal
