@@ -25,6 +25,7 @@ interface MapProps {
   spots?: SpotWithDetails[];
   selectedSpotId?: string | null;
   splitView?: boolean;
+  nightModeOverride?: boolean;
   onBoundsChange?: (bounds: BoundingBox) => void;
   onSpotClick?: (spotId: string, position?: { x: number; y: number }) => void;
   onSpotHover?: (spotId: string | null) => void;
@@ -36,6 +37,7 @@ export default function Map({
   spots = [],
   selectedSpotId,
   splitView = false,
+  nightModeOverride = false,
   onBoundsChange,
   onSpotClick,
   onSpotHover,
@@ -45,7 +47,7 @@ export default function Map({
   const prevSpotsRef = useRef<SpotWithDetails[]>([]);
 
   // Night mode based on user's local time (7pm - 6am)
-  const [isNightMode, setIsNightMode] = useState(() => {
+  const [autoNightMode, setAutoNightMode] = useState(() => {
     const hour = new Date().getHours();
     return hour >= 19 || hour < 6;
   });
@@ -54,11 +56,14 @@ export default function Map({
   useEffect(() => {
     const checkTime = () => {
       const hour = new Date().getHours();
-      setIsNightMode(hour >= 19 || hour < 6);
+      setAutoNightMode(hour >= 19 || hour < 6);
     };
     const interval = setInterval(checkTime, 60000);
     return () => clearInterval(interval);
   }, []);
+
+  // Use override (toggle button) as the source of truth
+  const isNightMode = nightModeOverride;
 
   // Track exiting spots for animation
   useEffect(() => {

@@ -39,6 +39,12 @@ export default function Home() {
   const [panelWidth, setPanelWidth] = useState(330);
   const [isResizing, setIsResizing] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [searchBounds, setSearchBounds] = useState<BoundingBox | undefined>();
+  const [showSearchButton, setShowSearchButton] = useState(false);
+  const [nightModeOverride, setNightModeOverride] = useState(() => {
+    const hour = new Date().getHours();
+    return hour >= 19 || hour < 6;
+  });
 
   const handlePanelResize = (width: number) => {
     const crossingThreshold = (panelWidth <= 500 && width > 500) || (panelWidth > 500 && width <= 500);
@@ -49,13 +55,26 @@ export default function Home() {
     setPanelWidth(width);
   };
 
-  const { spots, loading } = useSpots({ city, bounds, filters });
+  const { spots, loading } = useSpots({ bounds: searchBounds, filters });
 
   const unpinnedCard = openCards.find(c => !c.pinned);
 
   const handleBoundsChange = useCallback((newBounds: BoundingBox) => {
     setBounds(newBounds);
-  }, []);
+    // Show search button if bounds changed significantly from last search
+    if (searchBounds) {
+      const latDiff = Math.abs(newBounds.minLat - searchBounds.minLat) + Math.abs(newBounds.maxLat - searchBounds.maxLat);
+      const lngDiff = Math.abs(newBounds.minLng - searchBounds.minLng) + Math.abs(newBounds.maxLng - searchBounds.maxLng);
+      if (latDiff > 0.01 || lngDiff > 0.01) {
+        setShowSearchButton(true);
+      }
+    }
+  }, [searchBounds]);
+
+  const handleSearchArea = useCallback(() => {
+    setSearchBounds(bounds);
+    setShowSearchButton(false);
+  }, [bounds]);
 
   const handleSpotClick = useCallback((spotId: string, position?: { x: number; y: number }) => {
     // In split view, just select the spot (scrolls to card in list)
@@ -90,7 +109,16 @@ export default function Home() {
     setCity(newCity);
     setSelectedSpotId(null);
     setBounds(undefined);
+    setSearchBounds(undefined);
+    setShowSearchButton(false);
   }, []);
+
+  // Set initial search bounds when bounds first load
+  useEffect(() => {
+    if (bounds && !searchBounds) {
+      setSearchBounds(bounds);
+    }
+  }, [bounds, searchBounds]);
 
   const handleAddSpot = useCallback((data: NewSpotData) => {
     console.log('New spot submitted:', data);
@@ -220,6 +248,7 @@ export default function Home() {
               city={city}
               spots={spots}
               selectedSpotId={openCards.length > 0 ? openCards[openCards.length - 1].spotId : null}
+              nightModeOverride={nightModeOverride}
               onBoundsChange={handleBoundsChange}
               onSpotClick={handleSpotClick}
               onSpotHover={handleSpotHover}
@@ -263,7 +292,47 @@ export default function Home() {
                 </svg>
               </motion.button>
             </motion.div>
+
+            {/* Night mode toggle */}
+            <motion.button
+              onClick={() => setNightModeOverride(prev => !prev)}
+              className="w-10 h-10 rounded-lg flex items-center justify-center bg-white/95 backdrop-blur-sm shadow-lg border border-stone-200"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title={nightModeOverride ? 'Night mode' : 'Day mode'}
+            >
+              {nightModeOverride ? (
+                <svg className="w-5 h-5 text-indigo-500" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z" />
+                </svg>
+              )}
+            </motion.button>
           </motion.div>
+
+          {/* Search this area button - bottom center */}
+          <AnimatePresence>
+            {showSearchButton && (
+              <motion.button
+                onClick={handleSearchArea}
+                className="absolute bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 h-9 px-4 bg-white/95 backdrop-blur-sm rounded-full shadow-lg border border-stone-200 text-xs font-medium"
+                style={{ color: '#283618' }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Search this area
+              </motion.button>
+            )}
+          </AnimatePresence>
 
           {/* Floating actions - top right */}
           <motion.div
@@ -402,6 +471,7 @@ export default function Home() {
               spots={spots}
               selectedSpotId={selectedSpotId}
               splitView={true}
+              nightModeOverride={nightModeOverride}
               onBoundsChange={handleBoundsChange}
               onSpotClick={handleSpotClick}
               onSpotHover={handleSpotHover}
@@ -409,7 +479,7 @@ export default function Home() {
             />
             {/* Viewport bounds indicator */}
             <div
-              className="absolute bottom-8 border-2 border-dashed border-white/40 rounded-2xl pointer-events-none z-10 shadow-sm"
+              className="absolute bottom-20 border-2 border-dashed border-white/40 rounded-2xl pointer-events-none z-10 shadow-sm"
               style={{
                 top: 72,
                 left: 72,
@@ -455,7 +525,47 @@ export default function Home() {
                 </svg>
               </motion.button>
             </motion.div>
+
+            {/* Night mode toggle */}
+            <motion.button
+              onClick={() => setNightModeOverride(prev => !prev)}
+              className="w-10 h-10 rounded-lg flex items-center justify-center bg-white/95 backdrop-blur-sm shadow-lg border border-stone-200"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title={nightModeOverride ? 'Night mode' : 'Day mode'}
+            >
+              {nightModeOverride ? (
+                <svg className="w-5 h-5 text-indigo-500" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z" />
+                </svg>
+              )}
+            </motion.button>
           </motion.div>
+
+          {/* Search this area button - bottom center */}
+          <AnimatePresence>
+            {showSearchButton && (
+              <motion.button
+                onClick={handleSearchArea}
+                className="absolute bottom-20 z-50 flex items-center gap-2 h-9 px-4 bg-white/95 backdrop-blur-sm rounded-full shadow-lg border border-stone-200 text-xs font-medium"
+                style={{ color: '#283618', left: `calc(50% - ${panelWidth / 2}px)`, transform: 'translateX(-50%)' }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 20 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Search this area
+              </motion.button>
+            )}
+          </AnimatePresence>
 
           {/* Spots count - top right on map, only when panel is expanded */}
           <AnimatePresence>

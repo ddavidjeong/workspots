@@ -10,7 +10,7 @@ const SUPABASE_CONFIGURED =
   process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://your-project.supabase.co';
 
 interface UseSpotsOptions {
-  city: City;
+  city?: City;
   bounds?: BoundingBox;
   filters?: SpotFilters;
 }
@@ -35,8 +35,8 @@ export function useSpots({ city, bounds, filters }: UseSpotsOptions): UseSpotsRe
       if (!SUPABASE_CONFIGURED) {
         // Use mock data
         await new Promise((resolve) => setTimeout(resolve, 300)); // Simulate network delay
-        const { getMockSpots } = await import('@/lib/mock-data');
-        let mockSpots = getMockSpots(city);
+        const { getMockSpots, getAllMockSpots } = await import('@/lib/mock-data');
+        let mockSpots = city ? getMockSpots(city) : getAllMockSpots();
 
         // Apply bounding box filter
         if (bounds) {
@@ -109,8 +109,11 @@ export function useSpots({ city, bounds, filters }: UseSpotsOptions): UseSpotsRe
           reviews (
             rating
           )
-        `)
-        .eq('city', city);
+        `);
+
+      if (city) {
+        query = query.eq('city', city);
+      }
 
       if (bounds) {
         query = query

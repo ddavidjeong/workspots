@@ -5263,6 +5263,10 @@ export function getMockSpots(city: 'nyc' | 'sf' | 'fortlee'): SpotWithDetails[] 
   return MOCK_SPOTS.filter(s => s.city === city);
 }
 
+export function getAllMockSpots(): SpotWithDetails[] {
+  return [...MOCK_SPOTS, ...FORT_LEE_SPOTS];
+}
+
 export function getMockSpotById(id: string): SpotWithDetails | null {
   const fromMain = MOCK_SPOTS.find(s => s.id === id);
   if (fromMain) return fromMain;
