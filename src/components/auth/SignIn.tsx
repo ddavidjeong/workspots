@@ -33,47 +33,98 @@ export default function SignIn({ onSignIn }: SignInProps) {
     <div className="min-h-screen flex" style={{ backgroundColor: '#fefae0' }}>
       {/* Left side - Branding */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden" style={{ backgroundColor: '#283618' }}>
-        {/* Floating orbs with icons */}
+        {/* Floating orbs with integrated icons */}
         <div className="absolute inset-0 overflow-hidden">
           {/* Coffee orb */}
           <motion.div
-            className="absolute flex items-center justify-center"
+            className="absolute"
             style={{ top: '10%', left: '10%' }}
             animate={{ y: [0, -20, 0], x: [0, 10, 0] }}
             transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
           >
-            <FluidOrb size={120} color="#bc6c25" />
-            <span className="absolute text-4xl">☕</span>
+            <div className="relative w-[120px] h-[120px]">
+              <FluidOrb size={120} color="#bc6c25" />
+              <motion.svg
+                className="absolute inset-0 m-auto w-12 h-12"
+                viewBox="0 0 24 24"
+                fill="none"
+                animate={{ scale: [1, 1.05, 1], opacity: [0.9, 1, 0.9] }}
+                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <path d="M4 8h12v9a4 4 0 01-4 4H8a4 4 0 01-4-4V8z" fill="rgba(254,250,224,0.85)" />
+                <path d="M16 9c2 0 3 1.5 3 3s-1 3-3 3" stroke="rgba(254,250,224,0.85)" strokeWidth="2" strokeLinecap="round" />
+                <path d="M7 5v2M10 4v3M13 5v2" stroke="rgba(254,250,224,0.6)" strokeWidth="1.5" strokeLinecap="round" />
+              </motion.svg>
+            </div>
           </motion.div>
-          {/* Laptop/work orb */}
+
+          {/* Laptop orb */}
           <motion.div
-            className="absolute flex items-center justify-center"
+            className="absolute"
             style={{ top: '60%', left: '60%' }}
             animate={{ y: [0, 15, 0], x: [0, -15, 0] }}
             transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
           >
-            <FluidOrb size={180} color="#669bbc" />
-            <span className="absolute text-6xl">💻</span>
+            <div className="relative w-[180px] h-[180px]">
+              <FluidOrb size={180} color="#669bbc" />
+              <motion.svg
+                className="absolute inset-0 m-auto w-20 h-20"
+                viewBox="0 0 24 24"
+                fill="none"
+                animate={{ scale: [1, 1.03, 1], opacity: [0.85, 1, 0.85] }}
+                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+              >
+                <rect x="3" y="4" width="18" height="12" rx="2" fill="rgba(254,250,224,0.85)" />
+                <rect x="5" y="6" width="14" height="8" rx="1" fill="rgba(102,155,188,0.6)" />
+                <path d="M2 18h20" stroke="rgba(254,250,224,0.85)" strokeWidth="2" strokeLinecap="round" />
+                <path d="M8 18v1h8v-1" stroke="rgba(254,250,224,0.7)" strokeWidth="1.5" />
+              </motion.svg>
+            </div>
           </motion.div>
-          {/* Book/studying orb */}
+
+          {/* Book orb */}
           <motion.div
-            className="absolute flex items-center justify-center"
+            className="absolute"
             style={{ top: '30%', right: '15%' }}
             animate={{ y: [0, 25, 0], x: [0, -10, 0] }}
             transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
           >
-            <FluidOrb size={100} color="#606c38" />
-            <span className="absolute text-3xl">📚</span>
+            <div className="relative w-[100px] h-[100px]">
+              <FluidOrb size={100} color="#606c38" />
+              <motion.svg
+                className="absolute inset-0 m-auto w-10 h-10"
+                viewBox="0 0 24 24"
+                fill="none"
+                animate={{ scale: [1, 1.06, 1], opacity: [0.9, 1, 0.9] }}
+                transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+              >
+                <path d="M4 4v16c3-1 5-1 8 0V4c-3 1-5 1-8 0z" fill="rgba(254,250,224,0.85)" />
+                <path d="M12 4v16c3-1 5-1 8 0V4c-3 1-5 1-8 0z" fill="rgba(254,250,224,0.7)" />
+                <path d="M6 8h4M6 11h3M14 8h4M14 11h3" stroke="rgba(96,108,56,0.5)" strokeWidth="1" strokeLinecap="round" />
+              </motion.svg>
+            </div>
           </motion.div>
-          {/* Location/wifi orb */}
+
+          {/* Location pin orb */}
           <motion.div
-            className="absolute flex items-center justify-center"
+            className="absolute"
             style={{ bottom: '15%', left: '30%' }}
             animate={{ y: [0, -15, 0], x: [0, 20, 0] }}
             transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
           >
-            <FluidOrb size={80} color="#dda15e" />
-            <span className="absolute text-2xl">📍</span>
+            <div className="relative w-[80px] h-[80px]">
+              <FluidOrb size={80} color="#dda15e" />
+              <motion.svg
+                className="absolute inset-0 m-auto w-8 h-8"
+                viewBox="0 0 24 24"
+                fill="none"
+                animate={{ scale: [1, 1.08, 1], y: [0, -2, 0], opacity: [0.9, 1, 0.9] }}
+                transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut', delay: 0.3 }}
+              >
+                <path d="M12 2C8 2 5 5.5 5 9.5c0 5 7 12.5 7 12.5s7-7.5 7-12.5C19 5.5 16 2 12 2z" fill="rgba(254,250,224,0.85)" />
+                <circle cx="12" cy="9" r="2.5" fill="rgba(221,161,94,0.7)" />
+              </motion.svg>
+            </div>
           </motion.div>
         </div>
 

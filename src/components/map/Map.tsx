@@ -44,6 +44,22 @@ export default function Map({
   const [exitingSpots, setExitingSpots] = useState<SpotWithDetails[]>([]);
   const prevSpotsRef = useRef<SpotWithDetails[]>([]);
 
+  // Night mode based on user's local time (7pm - 6am)
+  const [isNightMode, setIsNightMode] = useState(() => {
+    const hour = new Date().getHours();
+    return hour >= 19 || hour < 6;
+  });
+
+  // Update night mode every minute
+  useEffect(() => {
+    const checkTime = () => {
+      const hour = new Date().getHours();
+      setIsNightMode(hour >= 19 || hour < 6);
+    };
+    const interval = setInterval(checkTime, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Track exiting spots for animation
   useEffect(() => {
     const currentIds = new Set(spots.map(s => s.id));
@@ -72,8 +88,12 @@ export default function Map({
       zoomControl={false}
     >
       <TileLayer
+        key={isNightMode ? 'night' : 'day'}
         attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
+        url={isNightMode
+          ? "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
+          : "https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
+        }
       />
       <MapEvents city={city} splitView={splitView} onBoundsChange={onBoundsChange} onMapReady={onMapReady} />
       {spots.map((spot) => (
