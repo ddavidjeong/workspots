@@ -9,6 +9,8 @@ import FloatingFilters from '@/components/filters/FloatingFilters';
 import SpotGrid from '@/components/spots/SpotGrid';
 import SpotPreview from '@/components/spots/SpotPreview';
 import AddSpotModal, { NewSpotData } from '@/components/spots/AddSpotModal';
+import SignIn from '@/components/auth/SignIn';
+import Logo from '@/components/ui/Logo';
 
 const Map = dynamic(() => import('@/components/map/Map'), {
   ssr: false,
@@ -20,6 +22,7 @@ const Map = dynamic(() => import('@/components/map/Map'), {
 });
 
 export default function Home() {
+  const [showSignIn, setShowSignIn] = useState(false);
   const [city, setCity] = useState<City>('fortlee');
   const [filters, setFilters] = useState<SpotFilters>({});
   const [bounds, setBounds] = useState<BoundingBox | undefined>();
@@ -123,6 +126,38 @@ export default function Home() {
   const showFloatingFilters = layout === 'map' || (layout === 'split' && panelWidth <= 500);
 
   return (
+    <>
+      {/* Sign In Overlay */}
+      <AnimatePresence>
+        {showSignIn && (
+          <motion.div
+            className="fixed inset-0 z-[100]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <motion.div
+              className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowSignIn(false)}
+            />
+            <motion.div
+              className="relative h-full"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            >
+              <SignIn onSignIn={() => setShowSignIn(false)} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Main App */}
     <div className="h-full relative overflow-hidden">
       {/* City selector + filters on map */}
       <motion.div
@@ -199,18 +234,7 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           >
-            <motion.div
-              className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg cursor-pointer"
-              style={{ backgroundColor: '#283618' }}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-            >
-              {/* Laptop/desk icon */}
-              <svg className="w-5 h-5" style={{ color: '#fefae0' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </motion.div>
+            <Logo size={40} className="shadow-lg cursor-pointer" />
             {/* Zoom controls */}
             <motion.div
               className="flex flex-col bg-white/95 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden"
@@ -310,6 +334,7 @@ export default function Home() {
 
             {/* Sign in - h-9 */}
             <motion.button
+              onClick={() => setShowSignIn(true)}
               className="h-9 px-4 text-xs font-medium rounded-full shadow-md"
               style={{ backgroundColor: '#283618', color: '#fefae0' }}
               whileHover={{ scale: 1.05, backgroundColor: '#3d4f28' }}
@@ -401,16 +426,7 @@ export default function Home() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           >
-            <motion.div
-              className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg cursor-pointer"
-              style={{ backgroundColor: '#283618' }}
-              whileHover={{ scale: 1.1, rotate: 5 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <svg className="w-5 h-5" style={{ color: '#fefae0' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </motion.div>
+            <Logo size={40} className="shadow-lg cursor-pointer" />
             {/* Zoom controls */}
             <motion.div
               className="flex flex-col bg-white/95 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden"
@@ -590,5 +606,6 @@ export default function Home() {
         onSubmit={handleAddSpot}
       />
     </div>
+    </>
   );
 }
