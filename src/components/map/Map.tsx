@@ -26,6 +26,8 @@ interface MapProps {
   selectedSpotId?: string | null;
   splitView?: boolean;
   nightModeOverride?: boolean;
+  spotsRefreshKey?: number;
+  animateSpots?: boolean;
   onBoundsChange?: (bounds: BoundingBox) => void;
   onSpotClick?: (spotId: string, position?: { x: number; y: number }) => void;
   onSpotHover?: (spotId: string | null) => void;
@@ -38,6 +40,8 @@ export default function Map({
   selectedSpotId,
   splitView = false,
   nightModeOverride = false,
+  spotsRefreshKey = 0,
+  animateSpots = false,
   onBoundsChange,
   onSpotClick,
   onSpotHover,
@@ -92,21 +96,27 @@ export default function Map({
       maxZoom={18}
       zoomControl={false}
     >
+      {/* Day tile layer */}
       <TileLayer
-        key={isNightMode ? 'night' : 'day'}
-        attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url={isNightMode
-          ? "https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
-          : "https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
-        }
+        attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>'
+        url="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
+        opacity={isNightMode ? 0 : 1}
+      />
+      {/* Night tile layer */}
+      <TileLayer
+        attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>'
+        url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
+        opacity={isNightMode ? 1 : 0}
       />
       <MapEvents city={city} splitView={splitView} onBoundsChange={onBoundsChange} onMapReady={onMapReady} />
-      {spots.map((spot) => (
+      {spots.map((spot, index) => (
         <SpotMarker
-          key={spot.id}
+          key={`${spotsRefreshKey}-${spot.id}`}
           spot={spot}
           isSelected={spot.id === selectedSpotId}
           isExiting={false}
+          entranceDelay={animateSpots ? index * 25 : 0}
+          shouldAnimate={animateSpots}
           onClick={(position) => onSpotClick?.(spot.id, position)}
           onHover={(hovering) => onSpotHover?.(hovering ? spot.id : null)}
         />
@@ -219,12 +229,16 @@ function SpotMarker({
   spot,
   isSelected,
   isExiting,
+  shouldAnimate = false,
+  entranceDelay = 0,
   onClick,
   onHover,
 }: {
   spot: SpotWithDetails;
   isSelected: boolean;
   isExiting: boolean;
+  shouldAnimate?: boolean;
+  entranceDelay?: number;
   onClick: (position: { x: number; y: number }) => void;
   onHover: (hovering: boolean) => void;
 }) {
@@ -247,24 +261,34 @@ function SpotMarker({
   const colors = gradientColors[spot.category || 'other'];
   const glowColor = `${accentColor}25`;
 
-  // Create stable icon - selection handled via DOM class toggle for smooth transitions
-  const icon = useMemo(() => L.divIcon({
-    className: `custom-marker${isExiting ? ' marker-exit' : ''}`,
-    html: `
-      <div class="marker-inner marker-icon" style="
-        --marker-bg-start: ${colors.start};
-        --marker-bg-end: ${colors.end};
-        --marker-border-color: ${colors.border};
-        --marker-border-selected: ${accentColor};
-        --marker-glow: ${glowColor};
-        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease-out !important;
-      ">
-        ${categoryIcon}
-      </div>
-    `,
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
-  }), [categoryIcon, colors, accentColor, glowColor, isExiting]);
+  // Capture animation state at mount time via ref - don't recreate icon when it changes
+  const initialAnimateRef = useRef(shouldAnimate);
+  const initialDelayRef = useRef(entranceDelay);
+
+  const icon = useMemo(() => {
+    const animationStyle = initialAnimateRef.current
+      ? `animation: markerBounceIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) ${initialDelayRef.current}ms backwards;`
+      : '';
+
+    return L.divIcon({
+      className: `custom-marker${isExiting ? ' marker-exit' : ''}`,
+      html: `
+        <div class="marker-inner marker-icon" style="
+          --marker-bg-start: ${colors.start};
+          --marker-bg-end: ${colors.end};
+          --marker-border-color: ${colors.border};
+          --marker-border-selected: ${accentColor};
+          --marker-glow: ${glowColor};
+          transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease-out !important;
+          ${animationStyle}
+        ">
+          ${categoryIcon}
+        </div>
+      `,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
+    });
+  }, [categoryIcon, colors, accentColor, glowColor, isExiting]);
 
   // Toggle selected class on existing DOM element for smooth CSS transition
   useEffect(() => {
@@ -280,6 +304,7 @@ function SpotMarker({
       }
     }
   }, [isSelected]);
+
 
   return (
     <Marker

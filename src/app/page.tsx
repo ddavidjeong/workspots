@@ -10,7 +10,6 @@ import SpotGrid from '@/components/spots/SpotGrid';
 import SpotPreview from '@/components/spots/SpotPreview';
 import AddSpotModal, { NewSpotData } from '@/components/spots/AddSpotModal';
 import SignIn from '@/components/auth/SignIn';
-import Logo from '@/components/ui/Logo';
 
 const Map = dynamic(() => import('@/components/map/Map'), {
   ssr: false,
@@ -45,6 +44,11 @@ export default function Home() {
     const hour = new Date().getHours();
     return hour >= 19 || hour < 6;
   });
+  const [spotsRefreshKey, setSpotsRefreshKey] = useState(0);
+  const [animateSpots, setAnimateSpots] = useState(false);
+  const toggleNightMode = () => {
+    setNightModeOverride(prev => !prev);
+  };
 
   const handlePanelResize = (width: number) => {
     const crossingThreshold = (panelWidth <= 500 && width > 500) || (panelWidth > 500 && width <= 500);
@@ -74,6 +78,9 @@ export default function Home() {
   const handleSearchArea = useCallback(() => {
     setSearchBounds(bounds);
     setShowSearchButton(false);
+    setSpotsRefreshKey(prev => prev + 1);
+    setAnimateSpots(true);
+    setTimeout(() => setAnimateSpots(false), 1500);
   }, [bounds]);
 
   const handleSpotClick = useCallback((spotId: string, position?: { x: number; y: number }) => {
@@ -195,13 +202,21 @@ export default function Home() {
         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       >
         {/* City selector - always visible */}
-        <div className="flex items-center h-9 bg-white/95 backdrop-blur-sm rounded-full shadow-md border border-stone-200 px-1 overflow-hidden">
+        <div className={`flex items-center h-9 backdrop-blur-sm rounded-full shadow-md px-1 overflow-hidden ${
+          nightModeOverride
+            ? 'bg-stone-800/95 border border-stone-700'
+            : 'bg-white/95 border border-stone-200'
+        }`}>
           {(Object.entries(CITY_DEFAULTS) as [City, typeof CITY_DEFAULTS[City]][]).map(([key, config]) => (
             <motion.button
               key={key}
               onClick={() => handleCityChange(key)}
               className={`h-7 px-3 rounded-full text-xs font-medium relative ${
-                city === key ? 'text-white' : 'text-stone-600 hover:text-stone-900'
+                city === key
+                  ? 'text-white'
+                  : nightModeOverride
+                    ? 'text-stone-300 hover:text-white'
+                    : 'text-stone-600 hover:text-stone-900'
               }`}
               whileHover={{ scale: city === key ? 1 : 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -249,77 +264,84 @@ export default function Home() {
               spots={spots}
               selectedSpotId={openCards.length > 0 ? openCards[openCards.length - 1].spotId : null}
               nightModeOverride={nightModeOverride}
+              spotsRefreshKey={spotsRefreshKey}
+              animateSpots={animateSpots}
               onBoundsChange={handleBoundsChange}
               onSpotClick={handleSpotClick}
               onSpotHover={handleSpotHover}
               onMapReady={setMapControls}
             />
-          </div>
+                      </div>
 
-          {/* Logo + Zoom - top left */}
+          {/* Zoom controls - top left */}
           <motion.div
-            className="absolute top-4 left-4 z-50 flex flex-col gap-4"
+            className={`absolute top-4 left-4 z-50 flex flex-col backdrop-blur-sm rounded-lg shadow-lg overflow-hidden ${
+              nightModeOverride ? 'bg-stone-800/95' : 'bg-white/95'
+            }`}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           >
-            <Logo size={40} className="shadow-lg cursor-pointer" />
-            {/* Zoom controls */}
-            <motion.div
-              className="flex flex-col bg-white/95 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, type: 'spring', stiffness: 400, damping: 25 }}
-            >
-              <motion.button
-                onClick={() => mapControls?.zoomIn()}
-                className="w-10 h-9 flex items-center justify-center text-stone-600 border-b border-stone-200"
-                whileHover={{ backgroundColor: '#f5f5f4', scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-              </motion.button>
-              <motion.button
-                onClick={() => mapControls?.zoomOut()}
-                className="w-10 h-9 flex items-center justify-center text-stone-600"
-                whileHover={{ backgroundColor: '#f5f5f4', scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                </svg>
-              </motion.button>
-            </motion.div>
-
-            {/* Night mode toggle */}
             <motion.button
-              onClick={() => setNightModeOverride(prev => !prev)}
-              className="w-10 h-10 rounded-lg flex items-center justify-center bg-white/95 backdrop-blur-sm shadow-lg border border-stone-200"
-              whileHover={{ scale: 1.05 }}
+              onClick={() => mapControls?.zoomIn()}
+              className={`w-10 h-9 flex items-center justify-center ${
+                nightModeOverride ? 'text-stone-300 border-b border-stone-700' : 'text-stone-600 border-b border-stone-200'
+              }`}
+              whileHover={{ backgroundColor: nightModeOverride ? '#44403c' : '#f5f5f4', scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              title={nightModeOverride ? 'Night mode' : 'Day mode'}
             >
-              {nightModeOverride ? (
-                <svg className="w-5 h-5 text-indigo-500" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
-                </svg>
-              ) : (
-                <svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z" />
-                </svg>
-              )}
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </motion.button>
+            <motion.button
+              onClick={() => mapControls?.zoomOut()}
+              className={`w-10 h-9 flex items-center justify-center ${
+                nightModeOverride ? 'text-stone-300' : 'text-stone-600'
+              }`}
+              whileHover={{ backgroundColor: nightModeOverride ? '#44403c' : '#f5f5f4', scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+              </svg>
             </motion.button>
           </motion.div>
+
+          {/* Night mode toggle - below zoom */}
+          <motion.button
+            onClick={toggleNightMode}
+            className={`absolute top-24 left-4 z-50 w-10 h-10 rounded-lg flex items-center justify-center backdrop-blur-sm shadow-lg ${
+              nightModeOverride ? 'bg-stone-800/95' : 'bg-white/95'
+            }`}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25, delay: 0.05 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            title={nightModeOverride ? 'Switch to day mode' : 'Switch to night mode'}
+          >
+            {nightModeOverride ? (
+              <svg className="w-4 h-4 text-indigo-400" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z" />
+              </svg>
+            )}
+          </motion.button>
 
           {/* Search this area button - bottom center */}
           <AnimatePresence>
             {showSearchButton && (
               <motion.button
                 onClick={handleSearchArea}
-                className="absolute bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 h-9 px-4 bg-white/95 backdrop-blur-sm rounded-full shadow-lg border border-stone-200 text-xs font-medium"
-                style={{ color: '#283618' }}
+                className={`absolute bottom-24 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 h-9 px-4 backdrop-blur-sm rounded-full shadow-lg text-xs font-medium ${
+                  nightModeOverride
+                    ? 'bg-stone-800/95 border border-stone-700 text-stone-200'
+                    : 'bg-white/95 border border-stone-200 text-stone-800'
+                }`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
@@ -342,10 +364,12 @@ export default function Home() {
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           >
             {/* Layout toggle - h-9 to match */}
-            <div className="flex items-center h-9 bg-white/95 backdrop-blur-sm rounded-full shadow-md border border-stone-200 px-1 overflow-hidden relative">
+            <div className={`flex items-center h-9 backdrop-blur-sm rounded-full shadow-md px-1 overflow-hidden relative ${
+              nightModeOverride ? 'bg-stone-800/95 border border-stone-700' : 'bg-white/95 border border-stone-200'
+            }`}>
               <motion.div
                 className="absolute inset-y-1 rounded-full"
-                style={{ backgroundColor: '#283618' }}
+                style={{ backgroundColor: nightModeOverride ? '#fefae0' : '#283618' }}
                 animate={{
                   x: layout === 'map' ? 4 : 'calc(100% - 4px)',
                   width: 'calc(50% - 4px)',
@@ -355,7 +379,9 @@ export default function Home() {
               <motion.button
                 onClick={() => setLayout('map')}
                 className={`h-7 px-3 rounded-full relative z-10 ${
-                  layout === 'map' ? 'text-white' : 'text-stone-500'
+                  layout === 'map'
+                    ? nightModeOverride ? 'text-stone-900' : 'text-white'
+                    : nightModeOverride ? 'text-stone-400' : 'text-stone-500'
                 }`}
                 title="Map view"
                 whileHover={{ scale: 1.05 }}
@@ -368,7 +394,9 @@ export default function Home() {
               <motion.button
                 onClick={() => setLayout('split')}
                 className={`h-7 px-3 rounded-full relative z-10 ${
-                  layout !== 'map' ? 'text-white' : 'text-stone-500'
+                  layout !== 'map'
+                    ? nightModeOverride ? 'text-stone-900' : 'text-white'
+                    : nightModeOverride ? 'text-stone-400' : 'text-stone-500'
                 }`}
                 title="Split view"
                 whileHover={{ scale: 1.05 }}
@@ -383,8 +411,12 @@ export default function Home() {
             {/* Add spot - h-9 */}
             <motion.button
               onClick={() => setShowAddSpot(true)}
-              className="flex items-center gap-2 h-9 px-4 bg-white/95 backdrop-blur-sm text-stone-700 text-xs font-medium rounded-full shadow-md border border-stone-200"
-              whileHover={{ scale: 1.05, backgroundColor: '#ffffff' }}
+              className={`flex items-center gap-2 h-9 px-4 backdrop-blur-sm text-xs font-medium rounded-full shadow-md ${
+                nightModeOverride
+                  ? 'bg-stone-800/95 text-stone-200 border border-stone-700'
+                  : 'bg-white/95 text-stone-700 border border-stone-200'
+              }`}
+              whileHover={{ scale: 1.05, backgroundColor: nightModeOverride ? '#44403c' : '#ffffff' }}
               whileTap={{ scale: 0.95 }}
               transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             >
@@ -472,14 +504,16 @@ export default function Home() {
               selectedSpotId={selectedSpotId}
               splitView={true}
               nightModeOverride={nightModeOverride}
+              spotsRefreshKey={spotsRefreshKey}
+              animateSpots={animateSpots}
               onBoundsChange={handleBoundsChange}
               onSpotClick={handleSpotClick}
               onSpotHover={handleSpotHover}
               onMapReady={setMapControls}
             />
-            {/* Viewport bounds indicator */}
+                        {/* Viewport bounds indicator */}
             <div
-              className="absolute bottom-20 border-2 border-dashed border-white/40 rounded-2xl pointer-events-none z-10 shadow-sm"
+              className="absolute bottom-12 border-2 border-dashed border-white/40 rounded-2xl pointer-events-none z-10 shadow-sm"
               style={{
                 top: 72,
                 left: 72,
@@ -489,69 +523,71 @@ export default function Home() {
             />
           </div>
 
-          {/* Logo + Zoom - top left */}
+          {/* Zoom controls - top left */}
           <motion.div
-            className="absolute top-4 left-4 z-50 flex flex-col gap-4"
+            className={`absolute top-4 left-4 z-50 flex flex-col backdrop-blur-sm rounded-lg shadow-lg overflow-hidden ${
+              nightModeOverride ? 'bg-stone-800/95' : 'bg-white/95'
+            }`}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
           >
-            <Logo size={40} className="shadow-lg cursor-pointer" />
-            {/* Zoom controls */}
-            <motion.div
-              className="flex flex-col bg-white/95 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, type: 'spring', stiffness: 400, damping: 25 }}
-            >
-              <motion.button
-                onClick={() => mapControls?.zoomIn()}
-                className="w-10 h-9 flex items-center justify-center text-stone-600 border-b border-stone-200"
-                whileHover={{ backgroundColor: '#f5f5f4', scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-              </motion.button>
-              <motion.button
-                onClick={() => mapControls?.zoomOut()}
-                className="w-10 h-9 flex items-center justify-center text-stone-600"
-                whileHover={{ backgroundColor: '#f5f5f4', scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                </svg>
-              </motion.button>
-            </motion.div>
-
-            {/* Night mode toggle */}
             <motion.button
-              onClick={() => setNightModeOverride(prev => !prev)}
-              className="w-10 h-10 rounded-lg flex items-center justify-center bg-white/95 backdrop-blur-sm shadow-lg border border-stone-200"
-              whileHover={{ scale: 1.05 }}
+              onClick={() => mapControls?.zoomIn()}
+              className={`w-10 h-9 flex items-center justify-center ${
+                nightModeOverride ? 'text-stone-300 border-b border-stone-700' : 'text-stone-600 border-b border-stone-200'
+              }`}
+              whileHover={{ backgroundColor: nightModeOverride ? '#44403c' : '#f5f5f4', scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              title={nightModeOverride ? 'Night mode' : 'Day mode'}
             >
-              {nightModeOverride ? (
-                <svg className="w-5 h-5 text-indigo-500" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
-                </svg>
-              ) : (
-                <svg className="w-5 h-5 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z" />
-                </svg>
-              )}
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </motion.button>
+            <motion.button
+              onClick={() => mapControls?.zoomOut()}
+              className={`w-10 h-9 flex items-center justify-center ${
+                nightModeOverride ? 'text-stone-300' : 'text-stone-600'
+              }`}
+              whileHover={{ backgroundColor: nightModeOverride ? '#44403c' : '#f5f5f4', scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+              </svg>
             </motion.button>
           </motion.div>
+
+          {/* Night mode toggle - below zoom */}
+          <motion.button
+            onClick={toggleNightMode}
+            className={`absolute top-24 left-4 z-50 w-10 h-10 rounded-lg flex items-center justify-center backdrop-blur-sm shadow-lg ${
+              nightModeOverride ? 'bg-stone-800/95' : 'bg-white/95'
+            }`}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 25, delay: 0.05 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            title={nightModeOverride ? 'Switch to day mode' : 'Switch to night mode'}
+          >
+            {nightModeOverride ? (
+              <svg className="w-4 h-4 text-indigo-400" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z" />
+              </svg>
+            )}
+          </motion.button>
 
           {/* Search this area button - bottom center */}
           <AnimatePresence>
             {showSearchButton && (
               <motion.button
                 onClick={handleSearchArea}
-                className="absolute bottom-20 z-50 flex items-center gap-2 h-9 px-4 bg-white/95 backdrop-blur-sm rounded-full shadow-lg border border-stone-200 text-xs font-medium"
+                className="absolute bottom-24 z-50 flex items-center gap-2 h-9 px-4 bg-white/95 backdrop-blur-sm rounded-full shadow-lg border border-stone-200 text-xs font-medium"
                 style={{ color: '#283618', left: `calc(50% - ${panelWidth / 2}px)`, transform: 'translateX(-50%)' }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
