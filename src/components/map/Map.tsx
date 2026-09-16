@@ -26,8 +26,6 @@ interface MapProps {
   selectedSpotId?: string | null;
   splitView?: boolean;
   nightModeOverride?: boolean;
-  spotsRefreshKey?: number;
-  animateSpots?: boolean;
   onBoundsChange?: (bounds: BoundingBox) => void;
   onSpotClick?: (spotId: string, position?: { x: number; y: number }) => void;
   onSpotHover?: (spotId: string | null) => void;
@@ -40,8 +38,6 @@ export default function Map({
   selectedSpotId,
   splitView = false,
   nightModeOverride = false,
-  spotsRefreshKey = 0,
-  animateSpots = false,
   onBoundsChange,
   onSpotClick,
   onSpotHover,
@@ -109,14 +105,12 @@ export default function Map({
         opacity={isNightMode ? 1 : 0}
       />
       <MapEvents city={city} splitView={splitView} onBoundsChange={onBoundsChange} onMapReady={onMapReady} />
-      {spots.map((spot, index) => (
+      {spots.map((spot) => (
         <SpotMarker
-          key={`${spotsRefreshKey}-${spot.id}`}
+          key={spot.id}
           spot={spot}
           isSelected={spot.id === selectedSpotId}
           isExiting={false}
-          entranceDelay={animateSpots ? index * 25 : 0}
-          shouldAnimate={animateSpots}
           onClick={(position) => onSpotClick?.(spot.id, position)}
           onHover={(hovering) => onSpotHover?.(hovering ? spot.id : null)}
         />
@@ -224,21 +218,17 @@ function MapEvents({
   return null;
 }
 
-// Custom spot marker - memoized to prevent unnecessary re-renders
+// Custom spot marker
 function SpotMarker({
   spot,
   isSelected,
   isExiting,
-  shouldAnimate = false,
-  entranceDelay = 0,
   onClick,
   onHover,
 }: {
   spot: SpotWithDetails;
   isSelected: boolean;
   isExiting: boolean;
-  shouldAnimate?: boolean;
-  entranceDelay?: number;
   onClick: (position: { x: number; y: number }) => void;
   onHover: (hovering: boolean) => void;
 }) {
@@ -261,34 +251,24 @@ function SpotMarker({
   const colors = gradientColors[spot.category || 'other'];
   const glowColor = `${accentColor}25`;
 
-  // Capture animation state at mount time via ref - don't recreate icon when it changes
-  const initialAnimateRef = useRef(shouldAnimate);
-  const initialDelayRef = useRef(entranceDelay);
-
-  const icon = useMemo(() => {
-    const animationStyle = initialAnimateRef.current
-      ? `animation: markerBounceIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) ${initialDelayRef.current}ms backwards;`
-      : '';
-
-    return L.divIcon({
-      className: `custom-marker${isExiting ? ' marker-exit' : ''}`,
-      html: `
-        <div class="marker-inner marker-icon" style="
-          --marker-bg-start: ${colors.start};
-          --marker-bg-end: ${colors.end};
-          --marker-border-color: ${colors.border};
-          --marker-border-selected: ${accentColor};
-          --marker-glow: ${glowColor};
-          transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease-out !important;
-          ${animationStyle}
-        ">
-          ${categoryIcon}
-        </div>
-      `,
-      iconSize: [32, 32],
-      iconAnchor: [16, 16],
-    });
-  }, [categoryIcon, colors, accentColor, glowColor, isExiting]);
+  // Keep icon stable - no animation props in dependencies
+  const icon = useMemo(() => L.divIcon({
+    className: `custom-marker${isExiting ? ' marker-exit' : ''}`,
+    html: `
+      <div class="marker-inner marker-icon" style="
+        --marker-bg-start: ${colors.start};
+        --marker-bg-end: ${colors.end};
+        --marker-border-color: ${colors.border};
+        --marker-border-selected: ${accentColor};
+        --marker-glow: ${glowColor};
+        transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease-out !important;
+      ">
+        ${categoryIcon}
+      </div>
+    `,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+  }), [categoryIcon, colors, accentColor, glowColor, isExiting]);
 
   // Toggle selected class on existing DOM element for smooth CSS transition
   useEffect(() => {

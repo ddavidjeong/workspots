@@ -44,8 +44,6 @@ export default function Home() {
     const hour = new Date().getHours();
     return hour >= 19 || hour < 6;
   });
-  const [spotsRefreshKey, setSpotsRefreshKey] = useState(0);
-  const [animateSpots, setAnimateSpots] = useState(false);
   const toggleNightMode = () => {
     setNightModeOverride(prev => !prev);
   };
@@ -78,9 +76,6 @@ export default function Home() {
   const handleSearchArea = useCallback(() => {
     setSearchBounds(bounds);
     setShowSearchButton(false);
-    setSpotsRefreshKey(prev => prev + 1);
-    setAnimateSpots(true);
-    setTimeout(() => setAnimateSpots(false), 1500);
   }, [bounds]);
 
   const handleSpotClick = useCallback((spotId: string, position?: { x: number; y: number }) => {
@@ -264,8 +259,6 @@ export default function Home() {
               spots={spots}
               selectedSpotId={openCards.length > 0 ? openCards[openCards.length - 1].spotId : null}
               nightModeOverride={nightModeOverride}
-              spotsRefreshKey={spotsRefreshKey}
-              animateSpots={animateSpots}
               onBoundsChange={handleBoundsChange}
               onSpotClick={handleSpotClick}
               onSpotHover={handleSpotHover}
@@ -504,8 +497,6 @@ export default function Home() {
               selectedSpotId={selectedSpotId}
               splitView={true}
               nightModeOverride={nightModeOverride}
-              spotsRefreshKey={spotsRefreshKey}
-              animateSpots={animateSpots}
               onBoundsChange={handleBoundsChange}
               onSpotClick={handleSpotClick}
               onSpotHover={handleSpotHover}
@@ -582,13 +573,17 @@ export default function Home() {
             )}
           </motion.button>
 
-          {/* Search this area button - bottom center */}
-          <AnimatePresence>
-            {showSearchButton && (
-              <motion.button
-                onClick={handleSearchArea}
-                className="absolute bottom-24 z-50 flex items-center gap-2 h-9 px-4 bg-white/95 backdrop-blur-sm rounded-full shadow-lg border border-stone-200 text-xs font-medium"
-                style={{ color: '#283618', left: `calc(50% - ${panelWidth / 2}px)`, transform: 'translateX(-50%)' }}
+          {/* Search this area button - centered in visible map area */}
+          <div
+            className="absolute bottom-24 z-50 flex justify-center pointer-events-none"
+            style={{ left: 0, right: panelWidth }}
+          >
+            <AnimatePresence>
+              {showSearchButton && (
+                <motion.button
+                  onClick={handleSearchArea}
+                  className="pointer-events-auto flex items-center gap-2 h-9 px-4 bg-white/95 backdrop-blur-sm rounded-full shadow-lg border border-stone-200 text-xs font-medium"
+                  style={{ color: '#283618' }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
@@ -600,8 +595,9 @@ export default function Home() {
                 </svg>
                 Search this area
               </motion.button>
-            )}
-          </AnimatePresence>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Spots count - top right on map, only when panel is expanded */}
           <AnimatePresence>
