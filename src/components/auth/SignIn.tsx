@@ -61,7 +61,7 @@ export default function SignIn({ onSignIn }: SignInProps) {
           {/* Laptop orb */}
           <motion.div
             className="absolute"
-            style={{ top: '60%', left: '60%' }}
+            style={{ top: '55%', left: '45%' }}
             animate={{ y: [0, 15, 0], x: [0, -15, 0] }}
             transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
           >
