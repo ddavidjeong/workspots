@@ -29,7 +29,7 @@ interface MapProps {
   onBoundsChange?: (bounds: BoundingBox) => void;
   onSpotClick?: (spotId: string, position?: { x: number; y: number }) => void;
   onSpotHover?: (spotId: string | null) => void;
-  onMapReady?: (controls: { zoomIn: () => void; zoomOut: () => void }) => void;
+  onMapReady?: (controls: { zoomIn: () => void; zoomOut: () => void; flyTo: (lat: number, lng: number, zoom?: number) => void }) => void;
 }
 
 export default function Map({
@@ -95,13 +95,13 @@ export default function Map({
       {/* Day tile layer */}
       <TileLayer
         attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>'
-        url="https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png"
+        url={`https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png?api_key=${process.env.NEXT_PUBLIC_STADIA_API_KEY}`}
         opacity={isNightMode ? 0 : 1}
       />
       {/* Night tile layer */}
       <TileLayer
         attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>'
-        url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
+        url={`https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${process.env.NEXT_PUBLIC_STADIA_API_KEY}`}
         opacity={isNightMode ? 1 : 0}
       />
       <MapEvents city={city} splitView={splitView} onBoundsChange={onBoundsChange} onMapReady={onMapReady} />
@@ -139,16 +139,19 @@ function MapEvents({
   city: City;
   splitView: boolean;
   onBoundsChange?: (bounds: BoundingBox) => void;
-  onMapReady?: (controls: { zoomIn: () => void; zoomOut: () => void }) => void;
+  onMapReady?: (controls: { zoomIn: () => void; zoomOut: () => void; flyTo: (lat: number, lng: number, zoom?: number) => void }) => void;
 }) {
   const map = useMap();
 
-  // Expose zoom controls to parent
+  // Expose map controls to parent
   useEffect(() => {
     if (onMapReady) {
       onMapReady({
         zoomIn: () => map.zoomIn(),
         zoomOut: () => map.zoomOut(),
+        flyTo: (lat: number, lng: number, zoom?: number) => {
+          map.flyTo([lat, lng], zoom ?? 14, { duration: 1.5 });
+        },
       });
     }
   }, [map, onMapReady]);

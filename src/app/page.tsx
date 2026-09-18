@@ -10,6 +10,7 @@ import SpotGrid from '@/components/spots/SpotGrid';
 import SpotPreview from '@/components/spots/SpotPreview';
 import AddSpotModal, { NewSpotData } from '@/components/spots/AddSpotModal';
 import SignIn from '@/components/auth/SignIn';
+import SearchBar from '@/components/search/SearchBar';
 
 const Map = dynamic(() => import('@/components/map/Map'), {
   ssr: false,
@@ -33,7 +34,7 @@ export default function Home() {
     pinned: boolean; // true = dragged or expanded, can't click-outside to close
   }>>([]);
   const [layout, setLayout] = useState<LayoutMode>('map');
-  const [mapControls, setMapControls] = useState<{ zoomIn: () => void; zoomOut: () => void } | null>(null);
+  const [mapControls, setMapControls] = useState<{ zoomIn: () => void; zoomOut: () => void; flyTo: (lat: number, lng: number, zoom?: number) => void } | null>(null);
   const [showAddSpot, setShowAddSpot] = useState(false);
   const [panelWidth, setPanelWidth] = useState(330);
   const [isResizing, setIsResizing] = useState(false);
@@ -189,13 +190,25 @@ export default function Home() {
 
       {/* Main App */}
     <div className="h-full relative overflow-hidden">
-      {/* City selector + filters on map */}
+      {/* Search + City selector + filters on map */}
       <motion.div
         className="absolute top-4 left-[72px] z-50 flex flex-wrap items-start gap-2"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       >
+        {/* Search bar */}
+        <SearchBar
+          darkMode={nightModeOverride}
+          onLocationSelect={(lat, lng, name) => {
+            mapControls?.flyTo(lat, lng, 14);
+            // Trigger search in new area after flying
+            setTimeout(() => {
+              setShowSearchButton(true);
+            }, 1600);
+          }}
+        />
+
         {/* City selector - always visible */}
         <div className={`flex items-center h-9 backdrop-blur-sm rounded-full shadow-md px-1 overflow-hidden ${
           nightModeOverride

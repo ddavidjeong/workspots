@@ -135,7 +135,7 @@ export default function SignIn({ onSignIn }: SignInProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Logo size={80} animate={false} />
+            <Logo size={80} />
           </motion.div>
           <motion.h1
             className="mt-8 text-5xl font-bold tracking-tight"
